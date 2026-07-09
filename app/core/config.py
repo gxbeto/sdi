@@ -23,7 +23,8 @@ class Settings(BaseSettings):
     rabbitmq_compras_queue: str
     log_level: str
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    # utf-8-sig tolera el BOM que agregan Notepad/PowerShell al guardar el .env en Windows.
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8-sig")
 
     @property
     def sqlalchemy_database_url(self) -> str:
