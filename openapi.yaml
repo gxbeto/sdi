@@ -805,7 +805,10 @@ paths:
       summary: Procesar evento de compra e incrementar stock
       description: 'Procesa un evento de compra recibido por HTTP o reenviado desde
         RabbitMQ, evita duplicados por mensaje_id, incrementa stock y registra movimiento
-        y precio de compra.
+        y precio de compra. Canal asincrono equivalente: publicar el mismo payload
+        (JSON, delivery_mode 2) en la cola RabbitMQ ''compras.stock'' (exchange default,
+        durable). El consumer de Stock aplica exactamente la misma logica e idempotencia.
+        Detalle completo en /documentacion, seccion ''Compras por cola (RabbitMQ)''.
 
 
         La operación debe tratar reintentos equivalentes de forma idempotente. Clave

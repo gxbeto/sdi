@@ -14,7 +14,13 @@ router = APIRouter(prefix="/compras", tags=["compras"])
 @router.post(
     "/eventos",
     summary="Procesar evento de compra e incrementar stock",
-    description="Procesa un evento de compra recibido por HTTP o reenviado desde RabbitMQ, evita duplicados por mensaje_id, incrementa stock y registra movimiento y precio de compra.",
+    description=(
+        "Procesa un evento de compra recibido por HTTP o reenviado desde RabbitMQ, evita duplicados por "
+        "mensaje_id, incrementa stock y registra movimiento y precio de compra. "
+        "Canal asincrono equivalente: publicar el mismo payload (JSON, delivery_mode 2) en la cola RabbitMQ "
+        "'compras.stock' (exchange default, durable). El consumer de Stock aplica exactamente la misma logica "
+        "e idempotencia. Detalle completo en /documentacion, seccion 'Compras por cola (RabbitMQ)'."
+    ),
     response_model=CompraEventoOut,
     responses={
         200: responses.COMPRA_EVENTO_OK,

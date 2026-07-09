@@ -86,13 +86,16 @@ python scripts/mantenimiento.py --reiniciar "systemctl restart sdi"
 
 El programa baja los cambios de git, actualiza dependencias, aplica las migraciones pendientes de Alembic y reinicia el servicio. Ante cualquier error se detiene sin ejecutar los pasos siguientes.
 
-## Consumer de compras (RabbitMQ)
+## Integración por cola (RabbitMQ)
+
+Además del endpoint REST, el módulo de Compras puede publicar eventos en la cola **`compras.stock`** (AMQP, durable, mensajes JSON persistentes con el mismo schema `CompraEventoIn`). El consumer de Stock aplica la misma lógica e idempotencia que `POST /compras/eventos`: un `mensaje_id` repetido se marca `DUPLICADO` y no duplica stock. La guía completa para publicadores (conexión, formato, semántica de reintentos) está en la sección *"Compras por cola (RabbitMQ)"* de la [documentación de servicios](docs/sdi_documentacion_servicios.html), servida en producción en `/documentacion`.
 
 ```powershell
-python -m app.consumers.compras_consumer
+python -m app.consumers.compras_consumer      # correr el consumer (requiere RabbitMQ)
+python scripts/publicar_compra.py --producto-id 1 --cantidad 5 --precio 32000   # publicar un evento de prueba
 ```
 
-Escucha la cola definida en `RABBITMQ_COMPRAS_QUEUE`. Sin RabbitMQ, el mismo procesamiento puede probarse con `POST /compras/eventos`.
+Sin RabbitMQ, el mismo procesamiento puede probarse con `POST /compras/eventos`.
 
 ## Formato de errores
 

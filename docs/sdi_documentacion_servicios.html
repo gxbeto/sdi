@@ -84,6 +84,7 @@
     <a href="#consultar-stock">Consultar stock</a>
     <a href="#movimientos">Movimientos</a>
     <a href="#compras">Compras</a>
+    <a href="#compras-cola">Compras por cola (RabbitMQ)</a>
     <a href="#reservas">Reservas</a>
     <a href="#confirmar-reserva">Confirmar reserva</a>
     <a href="#liberar-reserva">Liberar reserva</a>
@@ -553,6 +554,88 @@ flowchart LR
     classDef warn fill:#FEF9C3,stroke:#CA8A04,stroke-width:1.5px,color:#713F12
     linkStyle default stroke:#64748B,stroke-width:1.5px,color:#334155
     </pre>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="compras-cola">
+    <h2>Compras · Publicar evento por cola (RabbitMQ)</h2>
+    <div class="endpoint">
+      <span class="method post">AMQP</span><span class="path">cola: compras.stock</span>
+      <span class="opid">consumer: app.consumers.compras_consumer</span>
+      <span class="badge idem">IDEMPOTENTE · clave: mensaje_id</span>
+    </div>
+    <p>Canal <b>asíncrono</b> equivalente a <code>POST /compras/eventos</code>: el módulo de Compras publica el evento
+       en la cola y el módulo de Stock lo procesa con la <b>misma lógica</b> (incremento de stock, precio de compra,
+       movimiento <code>COMPRA</code> y comprobante interno). La ventaja del canal por cola es el desacople:
+       si Stock está temporalmente fuera de servicio, los mensajes esperan en la cola y se procesan al reconectarse,
+       sin que Compras reciba errores ni deba reintentar.</p>
+
+    <h3>Parámetros de conexión y publicación</h3>
+    <table>
+      <tr><th>Parámetro</th><th>Valor</th></tr>
+      <tr><td>Protocolo</td><td>AMQP 0-9-1 (RabbitMQ)</td></tr>
+      <tr><td>Cola</td><td><code>compras.stock</code> · <code>durable: true</code></td></tr>
+      <tr><td>Exchange</td><td>default (<code>""</code>) · <code>routing_key: compras.stock</code></td></tr>
+      <tr><td><code>content_type</code></td><td><code>application/json</code></td></tr>
+      <tr><td><code>delivery_mode</code></td><td><code>2</code> (persistente: el mensaje sobrevive reinicios del broker)</td></tr>
+      <tr><td>Credenciales</td><td>provistas por el equipo de Stock según el ambiente (no se publican en este documento)</td></tr>
+    </table>
+
+    <h3>Cuerpo del mensaje</h3>
+    <p>JSON con el <b>mismo schema <code>CompraEventoIn</code></b> de la sección anterior (mismos campos,
+       obligatoriedad y restricciones).</p>
+
+    <div class="cols">
+      <div>
+        <div class="example-title">Ejemplo de mensaje</div>
+<pre class="code"><span class="lbl">publish → compras.stock</span>
+{
+  "mensaje_id": "CMP-2026-0001",
+  "referencia_compra": "OC-001-000555",
+  "producto_id": 1,
+  "cantidad": 10,
+  "precio_compra": 9000,
+  "proveedor_ref": "PROV-001"
+}</pre>
+      </div>
+      <div>
+        <div class="example-title">Ejemplo publicador (Python + pika)</div>
+<pre class="code">import json, pika
+
+conexion = pika.BlockingConnection(
+    pika.URLParameters(RABBITMQ_URL))
+canal = conexion.channel()
+canal.queue_declare(queue="compras.stock", durable=True)
+canal.basic_publish(
+    exchange="",
+    routing_key="compras.stock",
+    body=json.dumps(mensaje),
+    properties=pika.BasicProperties(
+        delivery_mode=2,
+        content_type="application/json"))</pre>
+      </div>
+    </div>
+
+    <h3>Semántica de procesamiento</h3>
+    <table>
+      <tr><th>Aspecto</th><th>Comportamiento</th></tr>
+      <tr><td>Entrega</td><td>"al menos una vez": el mismo mensaje puede entregarse más de una vez; por eso la idempotencia por <code>mensaje_id</code> es obligatoria.</td></tr>
+      <tr><td>Idempotencia</td><td>un <code>mensaje_id</code> ya procesado se registra como <code>DUPLICADO</code> y <b>no</b> vuelve a incrementar stock.</td></tr>
+      <tr><td>Orden</td><td>procesamiento secuencial (<code>prefetch_count: 1</code>): un mensaje a la vez.</td></tr>
+      <tr><td>Mensaje inválido</td><td>JSON malformado o schema incumplido: se <b>descarta</b> (no se reintenta; reintentarlo nunca lo arreglaría).</td></tr>
+      <tr><td>Error transitorio</td><td>base de datos no disponible, timeout: el mensaje <b>vuelve a la cola</b> y se reintenta.</td></tr>
+    </table>
+
+    <div class="note">
+      <b>Verificación del resultado:</b> el canal por cola no devuelve respuesta síncrona. El publicador puede
+      confirmar el procesamiento consultando <code>GET /productos/{producto_id}?include=stock,movimientos</code> —
+      el movimiento <code>COMPRA</code> aparece con <code>documento_ref</code> igual a la <code>referencia_compra</code> enviada.
+    </div>
+
+    <div class="warn-box">
+      <b>Herramienta de prueba:</b> el repositorio incluye <code>scripts/publicar_compra.py</code>, que publica un
+      evento de prueba en la cola con los parámetros de conexión del <code>.env</code> del proyecto.
+    </div>
   </section>
 
   <!-- ============================================================ -->
