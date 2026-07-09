@@ -19,6 +19,7 @@ APP_NAME="${APP_NAME:-SDI}"
 APP_DIR="${APP_DIR:-/opt/sdi}"
 APP_USER="${APP_USER:-sdi}"
 SERVICE_NAME="${SERVICE_NAME:-sdi}"
+CONSUMER_SERVICE="${CONSUMER_SERVICE:-sdi-consumer}"
 DB_NAME="${DB_NAME:-sdi}"
 # Puerto 8181: los navegadores (Chrome/Firefox) bloquean el 6000 (ERR_UNSAFE_PORT).
 HEALTH_URL="${HEALTH_URL:-http://127.0.0.1:8181/health}"
@@ -48,6 +49,11 @@ ensure_app_user_can_write_repo() {
 
 restart_app_and_verify() {
     systemctl restart "$SERVICE_NAME"
+    # El consumer de compras (RabbitMQ) se reinicia junto con la API, si está instalado.
+    if systemctl list-unit-files "$CONSUMER_SERVICE.service" --no-legend 2>/dev/null | grep -q "$CONSUMER_SERVICE"; then
+        systemctl restart "$CONSUMER_SERVICE"
+        echo "Consumer $CONSUMER_SERVICE reiniciado."
+    fi
     echo -n "Esperando al servicio"
     for _ in 1 2 3 4 5; do
         sleep 2
@@ -92,6 +98,11 @@ status_app() {
 
     echo -e "\nWorkers uvicorn:"
     pgrep -u "$APP_USER" -f uvicorn | wc -l | xargs echo "Procesos activos:"
+
+    if systemctl list-unit-files "$CONSUMER_SERVICE.service" --no-legend 2>/dev/null | grep -q "$CONSUMER_SERVICE"; then
+        echo -e "\nConsumer de compras ($CONSUMER_SERVICE):"
+        systemctl status "$CONSUMER_SERVICE" --no-pager | head -3 || true
+    fi
 
     echo -e "\nSalud de la API:"
     curl -sf "$HEALTH_URL" && echo "" || echo -e "${RED}sin respuesta${NC}"
