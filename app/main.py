@@ -43,7 +43,8 @@ en ambiente controlado de red interna o infraestructura protegida.
         },
         {
             # Placeholder: reemplazar por el host real del ambiente de pruebas.
-            "url": "http://sdi-pruebas.example.com:6000",
+            # Puerto 8080: los navegadores bloquean el 6000 (ERR_UNSAFE_PORT).
+            "url": "http://sdi-pruebas.example.com:8080",
             "description": "Ambiente de pruebas / integracion",
         },
     ],
@@ -60,7 +61,7 @@ def custom_openapi() -> dict:
     schema = original_openapi()
     schema["externalDocs"] = {
         "description": "Documentacion tecnica y funcional del modulo SDI Stock",
-        "url": "http://sdi-pruebas.example.com:6000/sdi",
+        "url": "http://sdi-pruebas.example.com:8080/sdi",
     }
 
     app.openapi_schema = schema
