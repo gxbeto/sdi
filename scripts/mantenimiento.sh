@@ -20,8 +20,8 @@ APP_DIR="${APP_DIR:-/opt/sdi}"
 APP_USER="${APP_USER:-sdi}"
 SERVICE_NAME="${SERVICE_NAME:-sdi}"
 DB_NAME="${DB_NAME:-sdi}"
-# Puerto 8080: los navegadores (Chrome/Firefox) bloquean el 6000 (ERR_UNSAFE_PORT).
-HEALTH_URL="${HEALTH_URL:-http://127.0.0.1:8080/health}"
+# Puerto 8181: los navegadores (Chrome/Firefox) bloquean el 6000 (ERR_UNSAFE_PORT).
+HEALTH_URL="${HEALTH_URL:-http://127.0.0.1:8181/health}"
 BACKUP_DIR="${BACKUP_DIR:-$APP_DIR/backups}"
 DATE=$(date +%Y%m%d_%H%M%S)
 
