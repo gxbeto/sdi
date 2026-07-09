@@ -1,0 +1,2102 @@
+openapi: 3.2.0
+info:
+  title: SDI - Servicio Distribuido de Inventario
+  summary: API de gestion de stock para integracion entre modulos ERP.
+  description: '
+
+    API REST del modulo de Stock del sistema SDI.
+
+
+    Permite administrar productos, consultar stock, crear reservas,
+
+    confirmar ventas, liberar reservas y procesar eventos de compra.
+
+
+    Esta API esta pensada para integracion entre sistemas internos:
+
+    - Modulo de Ventas
+
+    - Modulo de Compras
+
+    - Modulo de Stock
+
+    - Servicios administrativos internos
+
+
+    La primera version no incluye seguridad formal. El consumo debe realizarse
+
+    en ambiente controlado de red interna o infraestructura protegida.
+
+    '
+  termsOfService: https://docs.sdi.local/terminos-api
+  contact:
+    name: Equipo SDI - Sistema Distribuido de Inventario
+    email: gxbeto@gmail.com
+  license:
+    name: Uso de la catedra Programacion de Aplicaiciones en Red - Profesor Alfonso
+      Fernandez
+  version: 0.1.0
+servers:
+- url: http://127.0.0.1:8000
+  description: Ambiente local de desarrollo
+- url: http://sdi-pruebas.example.com:6000
+  description: Ambiente de pruebas / integracion
+paths:
+  /health:
+    get:
+      tags:
+      - health
+      summary: Verificar disponibilidad del servicio SDI
+      description: Retorna un estado simple para confirmar que la API esta levantada
+        y responde requests HTTP.
+      operationId: verificarDisponibilidad
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthOut'
+              example:
+                status: ok
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+        default:
+          $ref: '#/components/responses/DefaultErrorResponse'
+  /productos:
+    post:
+      tags:
+      - productos
+      summary: Crear producto e inicializar su stock en cero
+      description: Registra un producto activo en el catalogo e inserta automaticamente
+        su fila en stock_actual con cantidades en cero.
+      operationId: crearProducto
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductoCreate'
+      responses:
+        '201':
+          description: Producto creado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductoCreated'
+              example:
+                producto_id: 1
+                codigo: INF-006
+                estado: CREADO
+        '409':
+          description: Ya existe un producto con el mismo codigo.
+          content:
+            application/json:
+              example:
+                estado: ERROR
+                codigo: PRODUCTO_CODIGO_DUPLICADO
+                mensaje: Ya existe un producto con el codigo INF-006.
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+        default:
+          $ref: '#/components/responses/DefaultErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedErrorResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenErrorResponse'
+    get:
+      tags:
+      - productos
+      summary: Listar productos con filtros opcionales
+      description: Lista productos del catalogo. Permite filtrar por codigo exacto
+        y por estado activo/inactivo.
+      operationId: listarProductos
+      parameters:
+      - name: filtro
+        in: query
+        required: false
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 50
+        description: Código exacto del producto. Escriba cualquier código, por ejemplo
+          INF-006.
+      - name: activo
+        in: query
+        required: false
+        schema:
+          type: boolean
+        description: Estado del producto. Use true para activos y false para inactivos.
+      responses:
+        '200':
+          description: Lista de productos.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductoOut'
+                title: Response Listar Productos Productos Get
+              example:
+              - producto_id: 1
+                codigo: INF-006
+                nombre: Teclado Satellite AK-910 USB / Negro
+                descripcion: Teclado USB con cable, color negro
+                categoria: Informatica
+                unidad_medida: UNIDAD
+                impuesto: 10
+                activo: true
+              - producto_id: 13
+                codigo: CEL-001
+                nombre: Celular Apple iPhone 17 256GB
+                descripcion: Smartphone Apple, 256GB de almacenamiento
+                categoria: Celulares
+                unidad_medida: UNIDAD
+                impuesto: 10
+                activo: true
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+        default:
+          $ref: '#/components/responses/DefaultErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedErrorResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenErrorResponse'
+  /productos/{producto_id}:
+    get:
+      tags:
+      - productos
+      summary: Consultar producto por identificador (consulta flexible agrupada)
+      description: 'Devuelve una respuesta agrupada con los bloques solicitados en
+        el parámetro `include`: producto, stock, precios y/o movimientos (separados
+        por coma). Si no se informa include, se asume `producto`. El orden no afecta
+        el resultado y los duplicados se ignoran. Un valor no permitido responde 422
+        VALIDACION_ERROR. No reemplaza a GET /stock/{producto_id} ni a GET /stock/movimientos.'
+      operationId: obtenerProducto
+      parameters:
+      - name: producto_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Producto Id
+          minimum: 1
+          description: Debe ser un identificador entero positivo.
+      - name: include
+        in: query
+        required: false
+        schema:
+          type: string
+          description: 'Bloques a incluir, separados por coma. Valores permitidos:
+            producto, stock, precios, movimientos. Ej.: include=producto,stock,precios'
+          default: producto
+          title: Include
+        description: 'Bloques a incluir en la respuesta agrupada, separados por coma.
+          Valores permitidos: producto, stock, precios, movimientos. Opcional; si
+          se omite se asume ''producto''. El orden no afecta el resultado y los duplicados
+          se ignoran. Ej.: include=producto,stock,precios.'
+        style: form
+        explode: false
+      - name: limite_movimientos
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 50
+          minimum: 1
+          description: 'Cantidad máxima de movimientos (solo aplica si include contiene
+            ''movimientos''). Orden: más recientes primero.'
+          default: 10
+          title: Limite Movimientos
+        description: 'Cantidad máxima de movimientos (solo aplica si include contiene
+          ''movimientos''). Orden: más recientes primero.'
+      responses:
+        '200':
+          description: Producto consultado. Respuesta agrupada según los bloques de
+            include.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductoConsultaOut'
+              examples:
+                producto:
+                  summary: include=producto
+                  value:
+                    producto:
+                      producto_id: 1
+                      codigo: INF-006
+                      nombre: Teclado Satellite AK-910 USB / Negro
+                      descripcion: Teclado USB con cable, color negro
+                      categoria: Informatica
+                      unidad_medida: UNIDAD
+                      impuesto: 10
+                      activo: true
+                stock:
+                  summary: include=stock
+                  value:
+                    stock:
+                      producto_id: 1
+                      cantidad_total: 10
+                      cantidad_reservada: 2
+                      cantidad_disponible: 8
+                productoStockPrecios:
+                  summary: include=producto,stock,precios
+                  value:
+                    producto:
+                      producto_id: 1
+                      codigo: INF-006
+                      nombre: Teclado Satellite AK-910 USB / Negro
+                      descripcion: Teclado USB con cable, color negro
+                      categoria: Informatica
+                      unidad_medida: UNIDAD
+                      impuesto: 10
+                      activo: true
+                    stock:
+                      producto_id: 1
+                      cantidad_total: 10
+                      cantidad_reservada: 2
+                      cantidad_disponible: 8
+                    precios:
+                      precio_compra: 32000
+                      precio_venta: 45760
+                stockMovimientos:
+                  summary: include=stock,movimientos&limite_movimientos=10
+                  value:
+                    stock:
+                      producto_id: 1
+                      cantidad_total: 10
+                      cantidad_reservada: 2
+                      cantidad_disponible: 8
+                    movimientos:
+                    - movimiento_id: 50
+                      producto_id: 1
+                      reserva_id: 101
+                      tipo_movimiento: VENTA
+                      origen: VENTAS
+                      documento_ref: FV-001-000123
+                      comprobante: STK-001-000001-6
+                      cantidad: 2
+                      stock_anterior: 10
+                      stock_posterior: 8
+                      observacion: Confirmación de venta desde reserva
+                productoMovimientos:
+                  summary: include=producto,movimientos&limite_movimientos=10
+                  value:
+                    producto:
+                      producto_id: 1
+                      codigo: INF-006
+                      nombre: Teclado Satellite AK-910 USB / Negro
+                      descripcion: Teclado USB con cable, color negro
+                      categoria: Informatica
+                      unidad_medida: UNIDAD
+                      impuesto: 10
+                      activo: true
+                    movimientos:
+                    - movimiento_id: 50
+                      producto_id: 1
+                      reserva_id: 101
+                      tipo_movimiento: VENTA
+                      origen: VENTAS
+                      documento_ref: FV-001-000123
+                      comprobante: STK-001-000001-6
+                      cantidad: 2
+                      stock_anterior: 10
+                      stock_posterior: 8
+                      observacion: Confirmación de venta desde reserva
+        '404':
+          description: El producto solicitado no existe.
+          content:
+            application/json:
+              example:
+                estado: ERROR
+                codigo: PRODUCTO_NO_EXISTE
+                mensaje: El producto 1 no existe.
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+        default:
+          $ref: '#/components/responses/DefaultErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedErrorResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenErrorResponse'
+  /stock/movimientos:
+    get:
+      tags:
+      - stock
+      summary: Consultar historial de movimientos de stock
+      description: Devuelve la trazabilidad de compras, reservas, ventas, liberaciones
+        y ajustes. Permite filtrar por producto, documento de referencia y tipo de
+        movimiento.
+      operationId: listarMovimientosStock
+      parameters:
+      - name: producto_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+            minimum: 1
+          - type: 'null'
+          title: Producto Id
+          description: Debe ser un identificador entero positivo.
+      - name: documento_ref
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Documento Ref
+      - name: tipo_movimiento
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - COMPRA
+          - RESERVA
+          - VENTA
+          - LIBERACION_RESERVA
+          - AJUSTE
+          title: Tipo Movimiento
+        description: Tipo de movimiento de stock usado como filtro de consulta.
+      responses:
+        '200':
+          description: Lista de movimientos.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MovimientoOut'
+                title: Response Listar Movimientos Stock Movimientos Get
+              example:
+              - movimiento_id: 50
+                producto_id: 1
+                reserva_id: 101
+                tipo_movimiento: VENTA
+                origen: VENTAS
+                documento_ref: FV-001-000123
+                comprobante: STK-001-000001-6
+                cantidad: 2
+                stock_anterior: 10
+                stock_posterior: 8
+                observacion: Confirmación de venta desde reserva
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+        default:
+          $ref: '#/components/responses/DefaultErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedErrorResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenErrorResponse'
+  /stock/{producto_id}:
+    get:
+      tags:
+      - stock
+      summary: Consultar stock actual de un producto
+      description: Devuelve las cantidades total, reservada y disponible del producto
+        indicado.
+      operationId: obtenerStock
+      parameters:
+      - name: producto_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Producto Id
+          minimum: 1
+          description: Debe ser un identificador entero positivo.
+      responses:
+        '200':
+          description: Stock actual.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockOut'
+              example:
+                producto_id: 1
+                cantidad_total: 10
+                cantidad_reservada: 2
+                cantidad_disponible: 8
+        '404':
+          description: El producto solicitado no existe.
+          content:
+            application/json:
+              example:
+                estado: ERROR
+                codigo: PRODUCTO_NO_EXISTE
+                mensaje: El producto 1 no existe.
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+        default:
+          $ref: '#/components/responses/DefaultErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedErrorResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenErrorResponse'
+  /stock/reservas:
+    post:
+      tags:
+      - stock
+      summary: Crear reserva de stock para uno o mas productos
+      description: 'Valida productos activos y stock disponible, bloquea las filas
+        de stock involucradas, incrementa la cantidad reservada y registra movimientos
+        de tipo RESERVA.
+
+
+        La operación debe tratar reintentos equivalentes de forma idempotente. Clave
+        idempotente: documento_ref.'
+      operationId: crearReserva
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservaCreate'
+        required: true
+      responses:
+        '201':
+          description: Reserva creada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservaCreateOut'
+              example:
+                estado: RESERVADO
+                documento_ref: FV-001-000123
+                comprobante: STK-001-000001-6
+                reservas:
+                - reserva_id: 101
+                  producto_id: 1
+                  cantidad_reservada: 2
+                  cantidad_disponible: 8
+        '400':
+          description: El producto existe, pero no puede operar.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                estado: ERROR
+                codigo: PRODUCTO_INACTIVO
+                mensaje: El producto 1 esta inactivo.
+        '404':
+          description: El producto solicitado no existe.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                estado: ERROR
+                codigo: PRODUCTO_NO_EXISTE
+                mensaje: El producto 1 no existe.
+        '409':
+          description: Conflicto funcional, replay no coincidente, operación ya procesada
+            o conflicto de concurrencia.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                stockInsuficiente:
+                  summary: Stock insuficiente
+                  value:
+                    estado: ERROR
+                    codigo: STOCK_INSUFICIENTE
+                    mensaje: 'Stock insuficiente para el producto 1: solicitado 2,
+                      disponible 1.'
+                documentoYaTieneReserva:
+                  summary: Documento ya reservado
+                  value:
+                    estado: ERROR
+                    codigo: DOCUMENTO_YA_TIENE_RESERVA
+                    mensaje: El documento FV-001-000123 ya posee una reserva registrada.
+                replayNoCoincide:
+                  summary: Replay con contenido diferente
+                  value:
+                    estado: ERROR
+                    codigo: REPLAY_NO_COINCIDE
+                    mensaje: El documento_ref ya existe, pero los ítems recibidos
+                      no coinciden con la reserva original.
+                conflictoConcurrencia:
+                  summary: Conflicto de concurrencia
+                  value:
+                    estado: ERROR
+                    codigo: CONFLICTO_CONCURRENCIA
+                    mensaje: La reserva no pudo completarse porque el stock fue modificado
+                      por otra operación concurrente.
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+        default:
+          $ref: '#/components/responses/DefaultErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedErrorResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenErrorResponse'
+      x-idempotency:
+        enabled: true
+        keyField: documento_ref
+        scope: Documento externo de venta o pedido que solicita la reserva.
+        replayBehavior: Si llega el mismo documento_ref con los mismos ítems, no se
+          duplica la reserva; se devuelve el estado ya registrado.
+        payloadConflictBehavior: Si llega el mismo documento_ref con ítems diferentes,
+          se rechaza con 409 y código REPLAY_NO_COINCIDE.
+        sameRequestPolicy: No debe duplicar movimientos, reservas ni descuentos ante
+          reintentos equivalentes.
+        differentPayloadPolicy: Debe responder 409 si la clave idempotente ya existe
+          con contenido diferente.
+      x-concurrency:
+        strategy: pessimistic-locking
+        conflictStatus: 409
+        conflictCode: CONFLICTO_CONCURRENCIA
+        description: Las operaciones que afectan stock deben ejecutarse en transacción
+          y proteger el saldo/reserva contra modificaciones concurrentes.
+  /stock/reservas/{reserva_id}/confirmar:
+    post:
+      tags:
+      - stock
+      summary: Confirmar reserva y descontar stock definitivo
+      description: 'Confirma una reserva pendiente, descuenta cantidad_total y cantidad_reservada,
+        registra movimiento de VENTA y opcionalmente precio de venta.
+
+
+        Operación de uso interno. Solo debe ser invocada por módulos internos del
+        ecosistema SDI, principalmente Ventas o procesos administrativos autorizados.
+        No forma parte del contrato público para integradores externos.
+
+
+        La operación debe tratar reintentos equivalentes de forma idempotente. Clave
+        idempotente: reserva_id.'
+      operationId: confirmarReserva
+      parameters:
+      - name: reserva_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Reserva Id
+          minimum: 1
+          description: Debe ser un identificador entero positivo.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmarReservaIn'
+      responses:
+        '200':
+          description: Reserva confirmada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfirmarReservaOut'
+              example:
+                estado: CONFIRMADA
+                reserva_id: 101
+                producto_id: 1
+                documento_ref: FV-001-000123
+                comprobante: STK-001-000002-4
+                cantidad_descontada: 2
+                stock_total_actual: 8
+                cantidad_reservada_actual: 0
+                cantidad_disponible_actual: 8
+        '404':
+          description: La reserva solicitada no existe.
+          content:
+            application/json:
+              example:
+                estado: ERROR
+                codigo: RESERVA_NO_EXISTE
+                mensaje: La reserva 101 no existe.
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflicto funcional, replay no coincidente, operación ya procesada
+            o conflicto de concurrencia.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                operacionYaProcesada:
+                  summary: Confirmación repetida
+                  value:
+                    estado: ERROR
+                    codigo: OPERACION_YA_PROCESADA
+                    mensaje: La reserva 101 ya fue confirmada previamente.
+                reservaYaLiberada:
+                  summary: Reserva liberada previamente
+                  value:
+                    estado: ERROR
+                    codigo: RESERVA_YA_LIBERADA
+                    mensaje: La reserva 101 ya fue liberada y no puede confirmarse.
+                conflictoConcurrencia:
+                  summary: Conflicto de concurrencia
+                  value:
+                    estado: ERROR
+                    codigo: CONFLICTO_CONCURRENCIA
+                    mensaje: La reserva fue modificada por otra operación concurrente.
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+        default:
+          $ref: '#/components/responses/DefaultErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedErrorResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenErrorResponse'
+      x-internal: true
+      x-idempotency:
+        enabled: true
+        keyField: reserva_id
+        scope: Confirmación interna de una reserva específica.
+        replayBehavior: Si la reserva ya está CONFIRMADA, la repetición de la confirmación
+          se trata como idempotente y devuelve el estado confirmado sin descontar
+          stock nuevamente.
+        payloadConflictBehavior: Si la reserva está LIBERADA o no corresponde a la
+          operación, se rechaza con 409.
+        sameRequestPolicy: No debe duplicar movimientos, reservas ni descuentos ante
+          reintentos equivalentes.
+        differentPayloadPolicy: Debe responder 409 si la clave idempotente ya existe
+          con contenido diferente.
+      x-concurrency:
+        strategy: pessimistic-locking
+        conflictStatus: 409
+        conflictCode: CONFLICTO_CONCURRENCIA
+        description: Las operaciones que afectan stock deben ejecutarse en transacción
+          y proteger el saldo/reserva contra modificaciones concurrentes.
+  /stock/reservas/{reserva_id}/liberar:
+    post:
+      tags:
+      - stock
+      summary: Liberar reserva pendiente y devolver disponibilidad
+      description: 'Libera una reserva pendiente cuando la venta no se concreta, reduce
+        cantidad_reservada y registra movimiento de LIBERACION_RESERVA.
+
+
+        Operación de uso interno. Solo debe ser invocada por módulos internos del
+        ecosistema SDI, principalmente Ventas o procesos administrativos autorizados.
+        No forma parte del contrato público para integradores externos.
+
+
+        La operación debe tratar reintentos equivalentes de forma idempotente. Clave
+        idempotente: reserva_id.'
+      operationId: liberarReserva
+      parameters:
+      - name: reserva_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          title: Reserva Id
+          minimum: 1
+          description: Debe ser un identificador entero positivo.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LiberarReservaIn'
+      responses:
+        '200':
+          description: Reserva liberada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiberarReservaOut'
+              example:
+                estado: LIBERADA
+                reserva_id: 101
+                comprobante: STK-001-000003-2
+                cantidad_liberada: 2
+        '404':
+          description: La reserva solicitada no existe.
+          content:
+            application/json:
+              example:
+                estado: ERROR
+                codigo: RESERVA_NO_EXISTE
+                mensaje: La reserva 101 no existe.
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflicto funcional, replay no coincidente, operación ya procesada
+            o conflicto de concurrencia.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                operacionYaProcesada:
+                  summary: Liberación repetida
+                  value:
+                    estado: ERROR
+                    codigo: OPERACION_YA_PROCESADA
+                    mensaje: La reserva 101 ya fue liberada previamente.
+                reservaYaConfirmada:
+                  summary: Reserva confirmada previamente
+                  value:
+                    estado: ERROR
+                    codigo: RESERVA_YA_CONFIRMADA
+                    mensaje: La reserva 101 ya fue confirmada y no puede liberarse.
+                conflictoConcurrencia:
+                  summary: Conflicto de concurrencia
+                  value:
+                    estado: ERROR
+                    codigo: CONFLICTO_CONCURRENCIA
+                    mensaje: La reserva fue modificada por otra operación concurrente.
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+        default:
+          $ref: '#/components/responses/DefaultErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedErrorResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenErrorResponse'
+      x-internal: true
+      x-idempotency:
+        enabled: true
+        keyField: reserva_id
+        scope: Liberación interna de una reserva específica.
+        replayBehavior: Si la reserva ya está LIBERADA, la repetición de la liberación
+          se trata como idempotente y devuelve el estado liberado sin alterar stock
+          nuevamente.
+        payloadConflictBehavior: Si la reserva está CONFIRMADA, se rechaza con 409.
+        sameRequestPolicy: No debe duplicar movimientos, reservas ni descuentos ante
+          reintentos equivalentes.
+        differentPayloadPolicy: Debe responder 409 si la clave idempotente ya existe
+          con contenido diferente.
+      x-concurrency:
+        strategy: pessimistic-locking
+        conflictStatus: 409
+        conflictCode: CONFLICTO_CONCURRENCIA
+        description: Las operaciones que afectan stock deben ejecutarse en transacción
+          y proteger el saldo/reserva contra modificaciones concurrentes.
+  /compras/eventos:
+    post:
+      tags:
+      - compras
+      summary: Procesar evento de compra e incrementar stock
+      description: 'Procesa un evento de compra recibido por HTTP o reenviado desde
+        RabbitMQ, evita duplicados por mensaje_id, incrementa stock y registra movimiento
+        y precio de compra.
+
+
+        La operación debe tratar reintentos equivalentes de forma idempotente. Clave
+        idempotente: mensaje_id.'
+      operationId: procesarEventoCompra
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompraEventoIn'
+        required: true
+      responses:
+        '200':
+          description: Evento de compra procesado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompraEventoOut'
+              example:
+                mensaje_id: CMP-2026-0001
+                estado_procesamiento: PROCESADO
+                producto_id: 1
+                documento_ref: OC-001-000555
+                comprobante: STK-001-000004-0
+                stock_total_actual: 18
+        '400':
+          description: El producto existe, pero no puede operar.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                estado: ERROR
+                codigo: PRODUCTO_INACTIVO
+                mensaje: El producto 1 esta inactivo.
+        '404':
+          description: El producto solicitado no existe.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                estado: ERROR
+                codigo: PRODUCTO_NO_EXISTE
+                mensaje: El producto 1 no existe.
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+        default:
+          $ref: '#/components/responses/DefaultErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedErrorResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenErrorResponse'
+        '409':
+          description: Conflicto funcional, replay no coincidente, operación ya procesada
+            o conflicto de concurrencia.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                mensajeDuplicado:
+                  summary: Mensaje ya procesado
+                  value:
+                    estado: ERROR
+                    codigo: MENSAJE_DUPLICADO
+                    mensaje: El mensaje CMP-2026-0001 ya fue procesado previamente.
+                replayNoCoincide:
+                  summary: Replay con contenido diferente
+                  value:
+                    estado: ERROR
+                    codigo: REPLAY_NO_COINCIDE
+                    mensaje: El mensaje_id ya existe, pero el contenido recibido no
+                      coincide con el procesamiento original.
+                operacionEnProceso:
+                  summary: Operación en proceso
+                  value:
+                    estado: ERROR
+                    codigo: OPERACION_EN_PROCESO
+                    mensaje: El evento de compra está siendo procesado. Reintente
+                      la consulta o el envío más tarde.
+      x-idempotency:
+        enabled: true
+        keyField: mensaje_id
+        scope: Evento de compra recibido desde Compras o reenviado desde RabbitMQ.
+        replayBehavior: Si llega el mismo mensaje_id con el mismo contenido, no se
+          vuelve a incrementar stock; se devuelve el resultado ya procesado.
+        payloadConflictBehavior: Si llega el mismo mensaje_id con contenido diferente,
+          se rechaza con 409 y código REPLAY_NO_COINCIDE.
+        sameRequestPolicy: No debe duplicar movimientos, reservas ni descuentos ante
+          reintentos equivalentes.
+        differentPayloadPolicy: Debe responder 409 si la clave idempotente ya existe
+          con contenido diferente.
+      x-concurrency:
+        strategy: pessimistic-locking
+        conflictStatus: 409
+        conflictCode: CONFLICTO_CONCURRENCIA
+        description: Las operaciones que afectan stock deben ejecutarse en transacción
+          y proteger el saldo/reserva contra modificaciones concurrentes.
+  /ventas/confirmar:
+    post:
+      tags:
+      - ventas
+      summary: Confirmar venta completa desde reservas pendientes
+      description: 'Confirma una venta con multiples items usando reservas pendientes
+        del mismo documento, descuenta stock en una unica transaccion y registra movimientos
+        y precios de venta.
+
+
+        La operación debe tratar reintentos equivalentes de forma idempotente. Clave
+        idempotente: documento_ref.'
+      operationId: confirmarVenta
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VentaConfirmarIn'
+        required: true
+      responses:
+        '200':
+          description: Venta confirmada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VentaConfirmarOut'
+              example:
+                estado: CONFIRMADA
+                documento_ref: FV-001-000123
+                comprobante: STK-001-000005-7
+        '409':
+          description: Conflicto funcional, replay no coincidente, operación ya procesada
+            o conflicto de concurrencia.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                documentoYaProcesado:
+                  summary: Venta ya confirmada
+                  value:
+                    estado: ERROR
+                    codigo: DOCUMENTO_YA_PROCESADO
+                    mensaje: El documento FV-001-000123 ya fue confirmado previamente.
+                replayNoCoincide:
+                  summary: Replay con contenido diferente
+                  value:
+                    estado: ERROR
+                    codigo: REPLAY_NO_COINCIDE
+                    mensaje: El documento_ref ya existe, pero los ítems recibidos
+                      no coinciden con la confirmación original.
+                reservaNoCoincide:
+                  summary: No coincide con reserva pendiente
+                  value:
+                    estado: ERROR
+                    codigo: RESERVA_NO_COINCIDE
+                    mensaje: No existe una reserva pendiente para el documento FV-001-000123,
+                      producto 1 y cantidad 2.
+                conflictoConcurrencia:
+                  summary: Conflicto de concurrencia
+                  value:
+                    estado: ERROR
+                    codigo: CONFLICTO_CONCURRENCIA
+                    mensaje: La venta no pudo confirmarse porque alguna reserva fue
+                      modificada por otra operación concurrente.
+        '422':
+          $ref: '#/components/responses/ValidationErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+        default:
+          $ref: '#/components/responses/DefaultErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedErrorResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenErrorResponse'
+      x-idempotency:
+        enabled: true
+        keyField: documento_ref
+        scope: Documento externo de venta confirmado por el módulo de Ventas.
+        replayBehavior: Si llega el mismo documento_ref con los mismos ítems, no se
+          duplica el descuento; se devuelve el resultado ya confirmado.
+        payloadConflictBehavior: Si llega el mismo documento_ref con contenido diferente,
+          se rechaza con 409 y código REPLAY_NO_COINCIDE.
+        sameRequestPolicy: No debe duplicar movimientos, reservas ni descuentos ante
+          reintentos equivalentes.
+        differentPayloadPolicy: Debe responder 409 si la clave idempotente ya existe
+          con contenido diferente.
+      x-concurrency:
+        strategy: pessimistic-locking
+        conflictStatus: 409
+        conflictCode: CONFLICTO_CONCURRENCIA
+        description: Las operaciones que afectan stock deben ejecutarse en transacción
+          y proteger el saldo/reserva contra modificaciones concurrentes.
+components:
+  schemas:
+    CompraEventoIn:
+      properties:
+        mensaje_id:
+          type: string
+          maxLength: 100
+          minLength: 1
+          title: Mensaje Id
+          examples:
+          - CMP-2026-0001
+        referencia_compra:
+          type: string
+          maxLength: 14
+          pattern: ^[A-Z]{2,3}-\d{3}-\d{6}$
+          title: Referencia Compra
+          description: 'Documento externo recibido desde Ventas o Compras. Se usa
+            para trazabilidad externa. Ejemplos: FV-001-000123, OC-001-000555.'
+          examples:
+          - FV-001-000123
+        producto_id:
+          type: integer
+          title: Producto Id
+          minimum: 1
+          description: Debe ser un identificador entero positivo.
+        cantidad:
+          type: number
+          multipleOf: 0.001
+          exclusiveMinimum: 0.0
+          format: decimal
+          title: Cantidad
+          examples:
+          - 2
+          example: 2
+        precio_compra:
+          type: number
+          multipleOf: 0.01
+          minimum: 0.0
+          format: decimal
+          title: Precio Compra
+          examples:
+          - 32000
+          example: 32000
+        proveedor_ref:
+          anyOf:
+          - type: string
+            maxLength: 80
+          - type: 'null'
+          title: Proveedor Ref
+      type: object
+      required:
+      - mensaje_id
+      - referencia_compra
+      - producto_id
+      - cantidad
+      - precio_compra
+      title: CompraEventoIn
+      example:
+        cantidad: 10
+        mensaje_id: CMP-2026-0001
+        precio_compra: 32000
+        producto_id: 1
+        proveedor_ref: PROV-001
+        referencia_compra: OC-001-000555
+    CompraEventoOut:
+      properties:
+        mensaje_id:
+          type: string
+          title: Mensaje Id
+        estado_procesamiento:
+          type: string
+          enum:
+          - PENDIENTE
+          - PROCESADO
+          - ERROR
+          title: Estado Procesamiento
+          description: Estado del procesamiento del evento recibido desde Compras.
+        producto_id:
+          type: integer
+          title: Producto Id
+          minimum: 1
+          description: Debe ser un identificador entero positivo.
+        documento_ref:
+          anyOf:
+          - type: string
+            pattern: ^[A-Z]{2,3}-\d{3}-\d{6}$
+            description: 'Documento externo recibido desde Ventas o Compras. Se usa
+              para trazabilidad externa. Ejemplos: FV-001-000123, OC-001-000555.'
+            examples:
+            - FV-001-000123
+          - type: 'null'
+          title: Documento Ref
+        comprobante:
+          anyOf:
+          - type: string
+            pattern: ^STK-\d{3}-\d{6}-\d$
+            description: Comprobante interno generado por el módulo Stock para identificar
+              la operación dentro del sistema. Incluye dígito verificador para validación
+              de entrada.
+            examples:
+            - STK-001-000001-6
+          - type: 'null'
+          title: Comprobante
+        stock_total_actual:
+          anyOf:
+          - type: number
+            multipleOf: 0.001
+            minimum: 0.0
+            format: decimal
+            example: 10
+          - type: 'null'
+          title: Stock Total Actual
+      type: object
+      required:
+      - mensaje_id
+      - estado_procesamiento
+      - producto_id
+      title: CompraEventoOut
+      example:
+        comprobante: STK-001-000004-0
+        documento_ref: OC-001-000555
+        estado_procesamiento: PROCESADO
+        mensaje_id: CMP-2026-0001
+        producto_id: 1
+        stock_total_actual: 18
+    ConfirmarReservaIn:
+      properties:
+        documento_ref:
+          anyOf:
+          - type: string
+            maxLength: 14
+            pattern: ^[A-Z]{2,3}-\d{3}-\d{6}$
+            description: 'Documento externo recibido desde Ventas o Compras. Se usa
+              para trazabilidad externa. Ejemplos: FV-001-000123, OC-001-000555.'
+            examples:
+            - FV-001-000123
+          - type: 'null'
+          title: Documento Ref
+        precio_venta:
+          anyOf:
+          - type: number
+            multipleOf: 0.01
+            minimum: 0.0
+            format: decimal
+            example: 32000
+          - type: 'null'
+          title: Precio Venta
+      type: object
+      title: ConfirmarReservaIn
+      example:
+        documento_ref: FV-001-000123
+        precio_venta: 45760
+    ConfirmarReservaOut:
+      properties:
+        estado:
+          type: string
+          enum:
+          - CONFIRMADA
+          title: Estado
+          description: Estado devuelto cuando la reserva fue confirmada.
+          default: CONFIRMADA
+        reserva_id:
+          type: integer
+          title: Reserva Id
+          minimum: 1
+          description: Debe ser un identificador entero positivo.
+        producto_id:
+          type: integer
+          title: Producto Id
+          minimum: 1
+          description: Debe ser un identificador entero positivo.
+        documento_ref:
+          type: string
+          pattern: ^[A-Z]{2,3}-\d{3}-\d{6}$
+          title: Documento Ref
+          description: 'Documento externo recibido desde Ventas o Compras. Se usa
+            para trazabilidad externa. Ejemplos: FV-001-000123, OC-001-000555.'
+          examples:
+          - FV-001-000123
+        comprobante:
+          type: string
+          pattern: ^STK-\d{3}-\d{6}-\d$
+          title: Comprobante
+          description: Comprobante interno generado por el módulo Stock para identificar
+            la operación dentro del sistema. Incluye dígito verificador para validación
+            de entrada.
+          examples:
+          - STK-001-000001-6
+        cantidad_descontada:
+          type: number
+          multipleOf: 0.001
+          minimum: 0.0
+          format: decimal
+          title: Cantidad Descontada
+          examples:
+          - 10
+          example: 10
+        stock_total_actual:
+          type: number
+          multipleOf: 0.001
+          minimum: 0.0
+          format: decimal
+          title: Stock Total Actual
+          examples:
+          - 10
+          example: 10
+        cantidad_reservada_actual:
+          type: number
+          multipleOf: 0.001
+          minimum: 0.0
+          format: decimal
+          title: Cantidad Reservada Actual
+          examples:
+          - 10
+          example: 10
+        cantidad_disponible_actual:
+          type: number
+          multipleOf: 0.001
+          minimum: 0.0
+          format: decimal
+          title: Cantidad Disponible Actual
+          examples:
+          - 10
+          example: 10
+      type: object
+      required:
+      - estado
+      - reserva_id
+      - producto_id
+      - documento_ref
+      - comprobante
+      - cantidad_descontada
+      - stock_total_actual
+      - cantidad_reservada_actual
+      - cantidad_disponible_actual
+      title: ConfirmarReservaOut
+      example:
+        cantidad_descontada: 2
+        cantidad_disponible_actual: 8
+        cantidad_reservada_actual: 0
+        comprobante: STK-001-000002-4
+        documento_ref: FV-001-000123
+        estado: CONFIRMADA
+        producto_id: 1
+        reserva_id: 101
+        stock_total_actual: 8
+    ErrorResponse:
+      properties:
+        estado:
+          type: string
+          enum:
+          - ERROR
+          title: Estado
+          description: Estado fijo para respuestas de error.
+          default: ERROR
+        codigo:
+          type: string
+          enum:
+          - VALIDACION_ERROR
+          - PRODUCTO_NO_EXISTE
+          - PRODUCTO_INACTIVO
+          - PRODUCTO_CODIGO_DUPLICADO
+          - STOCK_NO_INICIALIZADO
+          - STOCK_INSUFICIENTE
+          - RESERVA_NO_EXISTE
+          - RESERVA_NO_PENDIENTE
+          - RESERVA_NO_COINCIDE
+          - NO_AUTENTICADO
+          - ACCESO_DENEGADO
+          - ERROR_INTERNO
+          - ERROR_NO_CONTROLADO
+          - MENSAJE_DUPLICADO
+          - REPLAY_NO_COINCIDE
+          - OPERACION_YA_PROCESADA
+          - OPERACION_EN_PROCESO
+          - CONFLICTO_CONCURRENCIA
+          - DOCUMENTO_YA_PROCESADO
+          - DOCUMENTO_YA_TIENE_RESERVA
+          - RESERVA_YA_CONFIRMADA
+          - RESERVA_YA_LIBERADA
+          title: Codigo
+          description: Código técnico de error devuelto por la API.
+        mensaje:
+          type: string
+          title: Mensaje
+          examples:
+          - Descripcion clara del error.
+      type: object
+      required:
+      - codigo
+      - mensaje
+      title: ErrorResponse
+      example:
+        codigo: CODIGO_ERROR
+        estado: ERROR
+        mensaje: Descripcion clara del error.
+    HealthOut:
+      properties:
+        status:
+          type: string
+          title: Status
+          examples:
+          - ok
+      type: object
+      required:
+      - status
+      title: HealthOut
+      example:
+        status: ok
+    LiberarReservaIn:
+      properties:
+        motivo_liberacion:
+          type: string
+          maxLength: 200
+          minLength: 1
+          title: Motivo Liberacion
+          examples:
+          - Cancelacion de venta
+      type: object
+      required:
+      - motivo_liberacion
+      title: LiberarReservaIn
+      example:
+        motivo_liberacion: Cancelacion de venta
+    LiberarReservaOut:
+      properties:
+        estado:
+          type: string
+          enum:
+          - LIBERADA
+          title: Estado
+          description: Estado devuelto cuando la reserva fue liberada.
+          default: LIBERADA
+        reserva_id:
+          type: integer
+          title: Reserva Id
+          minimum: 1
+          description: Debe ser un identificador entero positivo.
+        comprobante:
+          type: string
+          pattern: ^STK-\d{3}-\d{6}-\d$
+          title: Comprobante
+          description: Comprobante interno generado por el módulo Stock para identificar
+            la operación dentro del sistema. Incluye dígito verificador para validación
+            de entrada.
+          examples:
+          - STK-001-000001-6
+        cantidad_liberada:
+          type: number
+          multipleOf: 0.001
+          minimum: 0.0
+          format: decimal
+          title: Cantidad Liberada
+          examples:
+          - 10
+          example: 10
+      type: object
+      required:
+      - estado
+      - reserva_id
+      - comprobante
+      - cantidad_liberada
+      title: LiberarReservaOut
+      example:
+        cantidad_liberada: 2
+        comprobante: STK-001-000003-2
+        estado: LIBERADA
+        reserva_id: 101
+    MovimientoOut:
+      properties:
+        movimiento_id:
+          type: integer
+          title: Movimiento Id
+          minimum: 1
+          description: Debe ser un identificador entero positivo.
+        producto_id:
+          type: integer
+          title: Producto Id
+          minimum: 1
+          description: Debe ser un identificador entero positivo.
+        reserva_id:
+          anyOf:
+          - type: integer
+            minimum: 1
+          - type: 'null'
+          title: Reserva Id
+          description: Debe ser un identificador entero positivo.
+        tipo_movimiento:
+          type: string
+          enum:
+          - COMPRA
+          - RESERVA
+          - VENTA
+          - LIBERACION_RESERVA
+          - AJUSTE
+          title: Tipo Movimiento
+          description: Tipo de operación que generó el movimiento de stock.
+        origen:
+          type: string
+          enum:
+          - COMPRAS
+          - VENTAS
+          - STOCK
+          - SISTEMA
+          title: Origen
+          description: Módulo o sistema que originó el movimiento.
+        documento_ref:
+          anyOf:
+          - type: string
+            pattern: ^[A-Z]{2,3}-\d{3}-\d{6}$
+            description: 'Documento externo recibido desde Ventas o Compras. Se usa
+              para trazabilidad externa. Ejemplos: FV-001-000123, OC-001-000555.'
+            examples:
+            - FV-001-000123
+          - type: 'null'
+          title: Documento Ref
+        comprobante:
+          type: string
+          pattern: ^STK-\d{3}-\d{6}-\d$
+          title: Comprobante
+          description: Comprobante interno generado por el módulo Stock para identificar
+            la operación dentro del sistema. Incluye dígito verificador para validación
+            de entrada.
+          examples:
+          - STK-001-000001-6
+        cantidad:
+          type: number
+          multipleOf: 0.001
+          minimum: 0.0
+          format: decimal
+          title: Cantidad
+          examples:
+          - 10
+          example: 10
+        stock_anterior:
+          type: number
+          multipleOf: 0.001
+          minimum: 0.0
+          format: decimal
+          title: Stock Anterior
+          examples:
+          - 10
+          example: 10
+        stock_posterior:
+          type: number
+          multipleOf: 0.001
+          minimum: 0.0
+          format: decimal
+          title: Stock Posterior
+          examples:
+          - 10
+          example: 10
+        observacion:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Observacion
+      type: object
+      required:
+      - movimiento_id
+      - producto_id
+      - reserva_id
+      - tipo_movimiento
+      - origen
+      - comprobante
+      - cantidad
+      - stock_anterior
+      - stock_posterior
+      - observacion
+      title: MovimientoOut
+      example:
+        cantidad: 2
+        comprobante: STK-001-000001-6
+        documento_ref: FV-001-000123
+        movimiento_id: 50
+        observacion: Confirmacion de venta desde reserva
+        origen: VENTAS
+        producto_id: 1
+        reserva_id: 101
+        stock_anterior: 10
+        stock_posterior: 8
+        tipo_movimiento: VENTA
+    PrecioResumenOut:
+      properties:
+        precio_compra:
+          anyOf:
+          - type: number
+            multipleOf: 0.01
+            minimum: 0.0
+            format: decimal
+            example: 32000
+          - type: 'null'
+          title: Precio Compra
+        precio_venta:
+          anyOf:
+          - type: number
+            multipleOf: 0.01
+            minimum: 0.0
+            format: decimal
+            example: 32000
+          - type: 'null'
+          title: Precio Venta
+      type: object
+      title: PrecioResumenOut
+      example:
+        precio_compra: 32000
+        precio_venta: 45760
+    ProductoConsultaOut:
+      properties:
+        producto:
+          anyOf:
+          - $ref: '#/components/schemas/ProductoOut'
+          - type: 'null'
+        stock:
+          anyOf:
+          - $ref: '#/components/schemas/StockOut'
+          - type: 'null'
+        precios:
+          anyOf:
+          - $ref: '#/components/schemas/PrecioResumenOut'
+          - type: 'null'
+        movimientos:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/MovimientoOut'
+            type: array
+          - type: 'null'
+          title: Movimientos
+      type: object
+      title: ProductoConsultaOut
+      description: 'Respuesta agrupada de la consulta flexible GET /productos/{producto_id}.
+
+
+        Cada bloque se incluye solo si fue solicitado en el parámetro `include`.
+
+        Los bloques no solicitados se omiten de la respuesta.'
+      example:
+        precios:
+          precio_compra: 32000
+          precio_venta: 45760
+        producto:
+          activo: true
+          categoria: Informatica
+          codigo: INF-006
+          descripcion: Teclado USB con cable, color negro
+          impuesto: 10
+          nombre: Teclado Satellite AK-910 USB / Negro
+          producto_id: 1
+          unidad_medida: UNIDAD
+        stock:
+          cantidad_disponible: 8
+          cantidad_reservada: 2
+          cantidad_total: 10
+          producto_id: 1
+    ProductoCreate:
+      properties:
+        codigo:
+          type: string
+          maxLength: 50
+          minLength: 1
+          title: Codigo
+          examples:
+          - INF-006
+        nombre:
+          type: string
+          maxLength: 150
+          minLength: 1
+          title: Nombre
+          examples:
+          - Teclado Satellite AK-910 USB / Negro
+        descripcion:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Descripcion
+        categoria:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Categoria
+          examples:
+          - Informatica
+        unidad_medida:
+          type: string
+          enum:
+          - UNIDAD
+          - CAJA
+          - KG
+          - LITRO
+          - METRO
+          title: Unidad Medida
+          description: Unidad de medida utilizada para registrar y mover stock.
+          default: UNIDAD
+        impuesto:
+          type: number
+          multipleOf: 0.01
+          maximum: 100.0
+          minimum: 0.0
+          format: decimal
+          title: Impuesto
+          default: '0.00'
+          examples:
+          - 10
+          example: 10
+      type: object
+      required:
+      - codigo
+      - nombre
+      title: ProductoCreate
+      example:
+        categoria: Informatica
+        codigo: INF-006
+        descripcion: Teclado USB con cable, color negro
+        impuesto: 10
+        nombre: Teclado Satellite AK-910 USB / Negro
+        unidad_medida: UNIDAD
+    ProductoCreated:
+      properties:
+        producto_id:
+          type: integer
+          title: Producto Id
+          minimum: 1
+          description: Debe ser un identificador entero positivo.
+        codigo:
+          type: string
+          title: Codigo
+        estado:
+          type: string
+          enum:
+          - CREADO
+          title: Estado
+          description: Estado devuelto cuando el producto fue creado.
+          default: CREADO
+      type: object
+      required:
+      - producto_id
+      - codigo
+      title: ProductoCreated
+      example:
+        codigo: INF-006
+        estado: CREADO
+        producto_id: 1
+    ProductoOut:
+      properties:
+        producto_id:
+          type: integer
+          title: Producto Id
+          minimum: 1
+          description: Debe ser un identificador entero positivo.
+        codigo:
+          type: string
+          title: Codigo
+        nombre:
+          type: string
+          title: Nombre
+        descripcion:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Descripcion
+        categoria:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Categoria
+        unidad_medida:
+          type: string
+          enum:
+          - UNIDAD
+          - CAJA
+          - KG
+          - LITRO
+          - METRO
+          title: Unidad Medida
+          description: Unidad de medida utilizada para registrar y mover stock.
+        impuesto:
+          type: number
+          multipleOf: 0.01
+          maximum: 100.0
+          minimum: 0.0
+          format: decimal
+          title: Impuesto
+          examples:
+          - 10
+          example: 10
+        activo:
+          type: boolean
+          title: Activo
+      type: object
+      required:
+      - producto_id
+      - codigo
+      - nombre
+      - descripcion
+      - categoria
+      - unidad_medida
+      - impuesto
+      - activo
+      title: ProductoOut
+      example:
+        activo: true
+        categoria: Informatica
+        codigo: INF-006
+        descripcion: Teclado USB con cable, color negro
+        impuesto: 10
+        nombre: Teclado Satellite AK-910 USB / Negro
+        producto_id: 1
+        unidad_medida: UNIDAD
+    ReservaCreate:
+      properties:
+        documento_ref:
+          type: string
+          maxLength: 14
+          pattern: ^[A-Z]{2,3}-\d{3}-\d{6}$
+          title: Documento Ref
+          description: 'Documento externo recibido desde Ventas o Compras. Se usa
+            para trazabilidad externa. Ejemplos: FV-001-000123, OC-001-000555.'
+          examples:
+          - FV-001-000123
+        items:
+          items:
+            $ref: '#/components/schemas/ReservaItemIn'
+          type: array
+          minItems: 1
+          title: Items
+      type: object
+      required:
+      - documento_ref
+      - items
+      title: ReservaCreate
+      example:
+        documento_ref: FV-001-000123
+        items:
+        - cantidad: 2
+          producto_id: 1
+    ReservaCreateOut:
+      properties:
+        estado:
+          type: string
+          enum:
+          - RESERVADO
+          title: Estado
+          description: Estado devuelto cuando la reserva fue creada.
+          default: RESERVADO
+        documento_ref:
+          type: string
+          pattern: ^[A-Z]{2,3}-\d{3}-\d{6}$
+          title: Documento Ref
+          description: 'Documento externo recibido desde Ventas o Compras. Se usa
+            para trazabilidad externa. Ejemplos: FV-001-000123, OC-001-000555.'
+          examples:
+          - FV-001-000123
+        comprobante:
+          type: string
+          pattern: ^STK-\d{3}-\d{6}-\d$
+          title: Comprobante
+          description: Comprobante interno generado por el módulo Stock para identificar
+            la operación dentro del sistema. Incluye dígito verificador para validación
+            de entrada.
+          examples:
+          - STK-001-000001-6
+        reservas:
+          items:
+            $ref: '#/components/schemas/ReservaItemOut'
+          type: array
+          title: Reservas
+      type: object
+      required:
+      - estado
+      - documento_ref
+      - comprobante
+      - reservas
+      title: ReservaCreateOut
+      example:
+        comprobante: STK-001-000001-6
+        documento_ref: FV-001-000123
+        estado: RESERVADO
+        reservas:
+        - cantidad_disponible: 8
+          cantidad_reservada: 2
+          producto_id: 1
+          reserva_id: 101
+    ReservaItemIn:
+      properties:
+        producto_id:
+          type: integer
+          title: Producto Id
+          minimum: 1
+          description: Debe ser un identificador entero positivo.
+        cantidad:
+          type: number
+          multipleOf: 0.001
+          exclusiveMinimum: 0.0
+          format: decimal
+          title: Cantidad
+          examples:
+          - 2
+          example: 2
+      type: object
+      required:
+      - producto_id
+      - cantidad
+      title: ReservaItemIn
+      example:
+        cantidad: 2
+        producto_id: 1
+    ReservaItemOut:
+      properties:
+        reserva_id:
+          type: integer
+          title: Reserva Id
+          minimum: 1
+          description: Debe ser un identificador entero positivo.
+        producto_id:
+          type: integer
+          title: Producto Id
+          minimum: 1
+          description: Debe ser un identificador entero positivo.
+        cantidad_reservada:
+          type: number
+          multipleOf: 0.001
+          minimum: 0.0
+          format: decimal
+          title: Cantidad Reservada
+          examples:
+          - 10
+          example: 10
+        cantidad_disponible:
+          type: number
+          multipleOf: 0.001
+          minimum: 0.0
+          format: decimal
+          title: Cantidad Disponible
+          examples:
+          - 10
+          example: 10
+      type: object
+      required:
+      - reserva_id
+      - producto_id
+      - cantidad_reservada
+      - cantidad_disponible
+      title: ReservaItemOut
+      example:
+        cantidad_disponible: 8
+        cantidad_reservada: 2
+        producto_id: 1
+        reserva_id: 101
+    StockOut:
+      properties:
+        producto_id:
+          type: integer
+          title: Producto Id
+          minimum: 1
+          description: Debe ser un identificador entero positivo.
+        cantidad_total:
+          type: number
+          multipleOf: 0.001
+          minimum: 0.0
+          format: decimal
+          title: Cantidad Total
+          examples:
+          - 10
+          example: 10
+        cantidad_reservada:
+          type: number
+          multipleOf: 0.001
+          minimum: 0.0
+          format: decimal
+          title: Cantidad Reservada
+          examples:
+          - 10
+          example: 10
+        cantidad_disponible:
+          type: number
+          multipleOf: 0.001
+          minimum: 0.0
+          format: decimal
+          title: Cantidad Disponible
+          examples:
+          - 10
+          example: 10
+      type: object
+      required:
+      - producto_id
+      - cantidad_total
+      - cantidad_reservada
+      - cantidad_disponible
+      title: StockOut
+      example:
+        cantidad_disponible: 8
+        cantidad_reservada: 2
+        cantidad_total: 10
+        producto_id: 1
+    VentaConfirmarIn:
+      properties:
+        documento_ref:
+          type: string
+          maxLength: 14
+          pattern: ^[A-Z]{2,3}-\d{3}-\d{6}$
+          title: Documento Ref
+          description: 'Documento externo recibido desde Ventas o Compras. Se usa
+            para trazabilidad externa. Ejemplos: FV-001-000123, OC-001-000555.'
+          examples:
+          - FV-001-000123
+        items:
+          items:
+            $ref: '#/components/schemas/VentaItemIn'
+          type: array
+          minItems: 1
+          title: Items
+      type: object
+      required:
+      - documento_ref
+      - items
+      title: VentaConfirmarIn
+      example:
+        documento_ref: FV-001-000123
+        items:
+        - cantidad: 2
+          precio_venta: 45760
+          producto_id: 1
+    VentaConfirmarOut:
+      properties:
+        estado:
+          type: string
+          enum:
+          - CONFIRMADA
+          title: Estado
+          description: Estado devuelto cuando la venta fue confirmada.
+          default: CONFIRMADA
+        documento_ref:
+          type: string
+          pattern: ^[A-Z]{2,3}-\d{3}-\d{6}$
+          title: Documento Ref
+          description: 'Documento externo recibido desde Ventas o Compras. Se usa
+            para trazabilidad externa. Ejemplos: FV-001-000123, OC-001-000555.'
+          examples:
+          - FV-001-000123
+        comprobante:
+          type: string
+          pattern: ^STK-\d{3}-\d{6}-\d$
+          title: Comprobante
+          description: Comprobante interno generado por el módulo Stock para identificar
+            la operación dentro del sistema. Incluye dígito verificador para validación
+            de entrada.
+          examples:
+          - STK-001-000001-6
+      type: object
+      required:
+      - estado
+      - documento_ref
+      - comprobante
+      title: VentaConfirmarOut
+      example:
+        comprobante: STK-001-000005-7
+        documento_ref: FV-001-000123
+        estado: CONFIRMADA
+    VentaItemIn:
+      properties:
+        producto_id:
+          type: integer
+          title: Producto Id
+          minimum: 1
+          description: Debe ser un identificador entero positivo.
+        cantidad:
+          type: number
+          multipleOf: 0.001
+          exclusiveMinimum: 0.0
+          format: decimal
+          title: Cantidad
+          examples:
+          - 2
+          example: 2
+        precio_venta:
+          type: number
+          multipleOf: 0.01
+          minimum: 0.0
+          format: decimal
+          title: Precio Venta
+          examples:
+          - 32000
+          example: 32000
+      type: object
+      required:
+      - producto_id
+      - cantidad
+      - precio_venta
+      title: VentaItemIn
+      example:
+        cantidad: 2
+        precio_venta: 45760
+        producto_id: 1
+  responses:
+    ValidationErrorResponse:
+      description: El request no cumple el contrato OpenAPI o las validaciones declaradas.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            estado: ERROR
+            codigo: VALIDACION_ERROR
+            mensaje: 'campo: descripción clara de la validación incumplida.'
+    UnauthorizedErrorResponse:
+      description: No autenticado. Falta credencial válida o el mecanismo de autenticación
+        rechazó la solicitud.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            estado: ERROR
+            codigo: NO_AUTENTICADO
+            mensaje: No se pudo autenticar la solicitud.
+    ForbiddenErrorResponse:
+      description: Acceso denegado. El consumidor no tiene permiso para ejecutar la
+        operación solicitada.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            estado: ERROR
+            codigo: ACCESO_DENEGADO
+            mensaje: No tiene permisos para ejecutar esta operación.
+    InternalServerErrorResponse:
+      description: Error interno controlado del servicio.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            estado: ERROR
+            codigo: ERROR_INTERNO
+            mensaje: Ocurrió un error interno al procesar la operación.
+    DefaultErrorResponse:
+      description: Error no controlado o no clasificado por el contrato.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            estado: ERROR
+            codigo: ERROR_NO_CONTROLADO
+            mensaje: Ocurrió un error no clasificado por el contrato.
+externalDocs:
+  description: Documentacion tecnica y funcional del modulo SDI Stock
+  url: http://sdi-pruebas.example.com:6000/sdi
+x-error-policy:
+  format: Todas las respuestas de error usan el schema ErrorResponse.
+  schema:
+    estado: ERROR
+    codigo: Código técnico estable definido por el contrato.
+    mensaje: Mensaje legible para diagnóstico funcional o técnico.
+  httpStatus:
+    '400': Error funcional o regla de negocio inválida.
+    '401': Solicitud no autenticada o credencial inválida.
+    '403': Consumidor autenticado sin permiso para ejecutar la operación.
+    '404': Recurso solicitado inexistente.
+    '409': Conflicto de estado o concurrencia funcional.
+    '422': Error de validación del contrato OpenAPI.
+    '500': Error interno controlado del servicio.
+    default: Error no clasificado por el contrato.
+x-idempotency-policy:
+  description: Política contractual para reintentos, replay y procesamiento previo.
+  rules:
+    sameIdempotencyKeySamePayload: Debe devolver el resultado ya conocido sin duplicar
+      efectos.
+    sameIdempotencyKeyDifferentPayload: Debe responder 409 con código REPLAY_NO_COINCIDE.
+    alreadyProcessed: Debe quedar expresado como operación ya procesada o respuesta
+      idempotente documentada.
+    duplicateEffects: No se deben duplicar reservas, movimientos, compras ni descuentos
+      de stock.
+x-concurrency-policy:
+  description: Política contractual para conflictos de concurrencia en operaciones
+    de stock.
+  httpStatus: 409
+  errorCode: CONFLICTO_CONCURRENCIA
+  rules:
+    stockMutation: Toda operación que modifique stock o reservas debe proteger el
+      saldo contra concurrencia.
+    reservationMutation: Las confirmaciones y liberaciones repetidas o concurrentes
+      deben tener resultado determinístico.
+    retry: El consumidor puede reintentar operaciones idempotentes usando la misma
+      clave y el mismo contenido.
+x-numeric-policy:
+  description: Política contractual para cantidades, precios e impuestos.
+  rules:
+    quantities:
+      type: number
+      precision: Hasta 3 decimales.
+      inputRule: Las cantidades operativas de entrada deben ser mayores que cero.
+      outputRule: Los saldos y cantidades calculadas deben ser mayores o iguales que
+        cero.
+    prices:
+      type: number
+      precision: Hasta 2 decimales.
+      rule: Los precios deben ser mayores o iguales que cero.
+    tax:
+      type: number
+      precision: Hasta 2 decimales.
+      rule: El impuesto debe estar entre 0 y 100.

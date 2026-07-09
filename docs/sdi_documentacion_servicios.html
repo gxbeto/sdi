@@ -1,0 +1,904 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SDI Stock - Documentación de servicios</title>
+  <style>
+    :root {
+      --bg: #F8FAFC; --card: #FFFFFF; --border: #E2E8F0; --text: #0F172A;
+      --muted: #475569; --blue: #2563EB; --blue-dark: #1E3A8A;
+      --green: #065F46; --amber: #B45309; --red: #B91C1C; --violet: #6D28D9;
+    }
+    * { box-sizing: border-box; }
+    body { font-family: Inter, "Segoe UI", Arial, sans-serif; margin: 0; background: var(--bg); color: var(--text); line-height: 1.55; }
+    main { max-width: 1200px; margin: 0 auto; padding: 32px 24px 64px; }
+    h1 { margin: 0 0 8px; font-size: 30px; }
+    h2 { font-size: 22px; margin: 0 0 4px; }
+    h3 { font-size: 17px; margin: 24px 0 8px; color: var(--blue-dark); }
+    p.lead { color: var(--muted); margin-top: 0; font-size: 15px; }
+    section { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px 28px; margin: 24px 0; box-shadow: 0 10px 25px rgba(15,23,42,.06); overflow-x: auto; }
+
+    /* Navegación */
+    nav.toc { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 18px 24px; margin: 24px 0; }
+    nav.toc strong { display: block; margin-bottom: 8px; }
+    nav.toc a { color: var(--blue); text-decoration: none; margin-right: 18px; font-size: 14px; white-space: nowrap; display: inline-block; margin-bottom: 4px; }
+    nav.toc a:hover { text-decoration: underline; }
+
+    /* Firma del servicio */
+    .endpoint { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 8px 0 4px; }
+    .method { font-weight: 700; font-size: 13px; padding: 3px 10px; border-radius: 8px; color: #fff; letter-spacing: .5px; }
+    .method.get { background: #0369A1; }
+    .method.post { background: #15803D; }
+    .path { font-family: Consolas, "Cascadia Code", monospace; font-size: 15px; font-weight: 600; }
+    .opid { font-size: 12px; color: var(--muted); font-family: Consolas, monospace; }
+    .badge { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; border: 1px solid; }
+    .badge.internal { color: var(--violet); border-color: var(--violet); background: #F5F3FF; }
+    .badge.idem { color: var(--amber); border-color: var(--amber); background: #FFFBEB; }
+    .sig { font-family: Consolas, "Cascadia Code", monospace; font-size: 13px; background: #F1F5F9; border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; color: #334155; margin: 6px 0 2px; overflow-x: auto; white-space: nowrap; }
+
+    /* Tablas */
+    table { border-collapse: collapse; width: 100%; font-size: 13.5px; margin: 8px 0 4px; }
+    th { text-align: left; background: #F1F5F9; color: #334155; font-size: 12.5px; text-transform: uppercase; letter-spacing: .4px; }
+    th, td { border: 1px solid var(--border); padding: 7px 10px; vertical-align: top; }
+    td code, p code, li code { font-family: Consolas, "Cascadia Code", monospace; font-size: 12.5px; background: #F1F5F9; border-radius: 4px; padding: 1px 5px; color: #0F172A; }
+    tr:nth-child(even) td { background: #FBFDFF; }
+    .req { color: var(--red); font-weight: 700; }
+    .opt { color: var(--muted); }
+
+    /* Bloques de ejemplo */
+    pre.code { background: #0F172A; color: #E2E8F0; border-radius: 10px; padding: 14px 16px; font-family: Consolas, "Cascadia Code", monospace; font-size: 13px; overflow-x: auto; margin: 8px 0; }
+    pre.code .lbl { color: #7DD3FC; }
+    .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 900px) { .cols { grid-template-columns: 1fr; } }
+    .example-title { font-size: 13px; font-weight: 700; color: var(--muted); margin: 14px 0 2px; text-transform: uppercase; letter-spacing: .4px; }
+
+    /* Estados */
+    .status { display: inline-block; font-weight: 700; font-size: 12.5px; padding: 1px 8px; border-radius: 6px; margin-right: 4px; }
+    .s2 { background: #DCFCE7; color: var(--green); }
+    .s4 { background: #FEF3C7; color: var(--amber); }
+    .s5, .s9 { background: #FEE2E2; color: var(--red); }
+
+    details { margin: 8px 0; }
+    summary { cursor: pointer; font-weight: 600; color: var(--blue-dark); font-size: 14px; }
+    .note { background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 10px; padding: 10px 14px; font-size: 13.5px; color: var(--blue-dark); margin: 10px 0; }
+    .warn-box { background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 10px; padding: 10px 14px; font-size: 13.5px; color: #92400E; margin: 10px 0; }
+    footer { color: var(--muted); font-size: 12.5px; text-align: center; margin-top: 32px; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>SDI Stock · Documentación de servicios</h1>
+  <p class="lead">
+    API REST del módulo de Stock del Sistema Distribuido de Inventario.
+    Contrato OpenAPI 3.2 generado desde el código (<code>scripts/generate_openapi_yaml.py</code> → <code>openapi.yaml</code>).
+  </p>
+
+  <nav class="toc">
+    <strong>Contenido</strong>
+    <a href="#convenciones">Convenciones</a>
+    <a href="#tipos">Tipos de datos</a>
+    <a href="#crear-producto">Crear producto</a>
+    <a href="#listar-productos">Listar productos</a>
+    <a href="#consultar-producto">Consulta flexible de producto</a>
+    <a href="#consultar-stock">Consultar stock</a>
+    <a href="#movimientos">Movimientos</a>
+    <a href="#compras">Compras</a>
+    <a href="#reservas">Reservas</a>
+    <a href="#confirmar-reserva">Confirmar reserva</a>
+    <a href="#liberar-reserva">Liberar reserva</a>
+    <a href="#ventas">Ventas</a>
+    <a href="#errores">Catálogo de errores</a>
+  </nav>
+
+  <!-- ============================================================ -->
+  <section id="convenciones">
+    <h2>Convenciones generales</h2>
+
+    <h3>Servidores</h3>
+    <table>
+      <tr><th>URL</th><th>Descripción</th></tr>
+      <tr><td><code>http://127.0.0.1:8000</code></td><td>Ambiente local de desarrollo</td></tr>
+      <tr><td><code>http://sdi-pruebas.example.com:6000</code></td><td>Ambiente de pruebas / integración</td></tr>
+    </table>
+
+    <h3>Orden conceptual de las operaciones</h3>
+    <div class="note">
+      <b>1.</b> Para <b>comprar</b> un producto, primero hay que <b>crearlo</b> (la creación inicializa su stock en cero).<br/>
+      <b>2.</b> Para <b>vender</b> un producto, primero hay que <b>reservarlo</b> (la venta se concreta confirmando la reserva; si se cancela, se libera).
+    </div>
+
+    <h3>documento_ref vs comprobante</h3>
+    <table>
+      <tr><th>Campo</th><th>Origen</th><th>Formato</th><th>Ejemplos</th><th>Uso</th></tr>
+      <tr>
+        <td><code>documento_ref</code></td>
+        <td>Documento <b>externo</b> recibido desde Ventas o Compras</td>
+        <td><code>^[A-Z]{2,3}-\d{3}-\d{6}$</code></td>
+        <td><code>FV-001-000123</code> · <code>OC-001-000555</code></td>
+        <td>Trazabilidad externa</td>
+      </tr>
+      <tr>
+        <td><code>comprobante</code></td>
+        <td>Comprobante <b>interno</b> generado por Stock en cada operación</td>
+        <td><code>^STK-\d{3}-\d{6}-\d$</code></td>
+        <td><code>STK-001-000001-6</code></td>
+        <td>Trazabilidad interna. Prueba de que la operación anterior se realizó</td>
+      </tr>
+    </table>
+    <div class="warn-box">
+      El último dígito del <code>comprobante</code> es un <b>dígito verificador</b> (algoritmo de Luhn sobre los 9 dígitos de
+      serie + correlativo). Permite validar de entrada si un comprobante es oficial sin consultar el sistema.
+      El <code>comprobante</code> <b>no reemplaza</b> a <code>documento_ref</code>: conviven en las respuestas y en los movimientos.
+    </div>
+
+    <h3>Política numérica (x-numeric-policy)</h3>
+    <table>
+      <tr><th>Grupo</th><th>Tipo JSON</th><th>Precisión</th><th>Regla</th></tr>
+      <tr><td>Cantidades</td><td><code>number</code></td><td>Hasta 3 decimales (<code>multipleOf: 0.001</code>)</td><td>Entradas &gt; 0 · saldos y salidas ≥ 0</td></tr>
+      <tr><td>Precios</td><td><code>number</code></td><td>Hasta 2 decimales (<code>multipleOf: 0.01</code>)</td><td>≥ 0 · sin campo moneda</td></tr>
+      <tr><td>Impuesto</td><td><code>number</code></td><td>Hasta 2 decimales</td><td>Entre 0 y 100</td></tr>
+    </table>
+    <p>Los valores numéricos viajan como números JSON (<code>"cantidad": 2.5</code>), nunca como string ni como entero forzado.</p>
+
+    <h3>Formato de errores</h3>
+    <pre class="code">{ "estado": "ERROR", "codigo": "CODIGO_TECNICO", "mensaje": "Descripción clara del error." }</pre>
+    <p>Todas las respuestas de error usan el schema <code>ErrorResponse</code>. Ver el <a href="#errores">catálogo de errores</a>.</p>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="tipos">
+    <h2>Tipos de datos reutilizados</h2>
+    <table>
+      <tr><th>Tipo</th><th>JSON</th><th>Restricciones</th><th>Ejemplo</th></tr>
+      <tr><td><code>Cantidad</code></td><td>number</td><td><code>minimum: 0</code> · <code>multipleOf: 0.001</code></td><td><code>10</code>, <code>7.5</code></td></tr>
+      <tr><td><code>CantidadPositiva</code></td><td>number</td><td><code>exclusiveMinimum: 0</code> · <code>multipleOf: 0.001</code></td><td><code>2</code>, <code>2.5</code></td></tr>
+      <tr><td><code>Precio</code></td><td>number</td><td><code>minimum: 0</code> · <code>multipleOf: 0.01</code></td><td><code>15000</code></td></tr>
+      <tr><td><code>Impuesto</code></td><td>number</td><td><code>minimum: 0</code> · <code>maximum: 100</code> · <code>multipleOf: 0.01</code></td><td><code>10.1</code></td></tr>
+      <tr><td><code>DocumentoRef</code></td><td>string</td><td>patrón <code>^[A-Z]{2,3}-\d{3}-\d{6}$</code></td><td><code>FV-001-000123</code></td></tr>
+      <tr><td><code>Comprobante</code></td><td>string</td><td>patrón <code>^STK-\d{3}-\d{6}-\d$</code> (con dígito verificador)</td><td><code>STK-001-000001-6</code></td></tr>
+      <tr><td><code>unidad_medida</code></td><td>string (enum)</td><td><code>UNIDAD</code> · <code>CAJA</code> · <code>KG</code> · <code>LITRO</code> · <code>METRO</code></td><td><code>UNIDAD</code></td></tr>
+      <tr><td><code>tipo_movimiento</code></td><td>string (enum)</td><td><code>COMPRA</code> · <code>RESERVA</code> · <code>VENTA</code> · <code>LIBERACION_RESERVA</code> · <code>AJUSTE</code></td><td><code>VENTA</code></td></tr>
+      <tr><td><code>origen</code></td><td>string (enum)</td><td><code>COMPRAS</code> · <code>VENTAS</code> · <code>STOCK</code> · <code>SISTEMA</code></td><td><code>VENTAS</code></td></tr>
+      <tr><td>Identificadores (<code>producto_id</code>, <code>reserva_id</code>, ...)</td><td>integer</td><td><code>minimum: 1</code></td><td><code>1</code></td></tr>
+    </table>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="crear-producto">
+    <h2>Crear producto</h2>
+    <div class="endpoint">
+      <span class="method post">POST</span><span class="path">/productos</span>
+      <span class="opid">operationId: crearProducto</span>
+    </div>
+    <div class="sig">crear_producto(payload: ProductoCreate) -> ProductoCreated &nbsp;·&nbsp; servicio: inventory.crear_producto</div>
+    <p>Registra un producto activo en el catálogo e inicializa automáticamente su stock en cero.
+       Es el <b>prerrequisito</b> de cualquier compra o reserva.</p>
+
+    <h3>Request · ProductoCreate</h3>
+    <table>
+      <tr><th>Campo</th><th>Tipo</th><th>Oblig.</th><th>Restricciones</th><th>Ejemplo</th></tr>
+      <tr><td><code>codigo</code></td><td>string</td><td class="req">Sí</td><td>1–50 caracteres, único</td><td><code>"P001"</code></td></tr>
+      <tr><td><code>nombre</code></td><td>string</td><td class="req">Sí</td><td>1–150 caracteres</td><td><code>"Producto A"</code></td></tr>
+      <tr><td><code>descripcion</code></td><td>string | null</td><td class="opt">No</td><td>—</td><td><code>"Producto de ejemplo"</code></td></tr>
+      <tr><td><code>categoria</code></td><td>string | null</td><td class="opt">No</td><td>—</td><td><code>"General"</code></td></tr>
+      <tr><td><code>unidad_medida</code></td><td>string (enum)</td><td class="opt">No (default <code>UNIDAD</code>)</td><td>ver enum de unidades</td><td><code>"UNIDAD"</code></td></tr>
+      <tr><td><code>impuesto</code></td><td>Impuesto</td><td class="opt">No (default <code>0</code>)</td><td>0–100, 2 decimales</td><td><code>10.1</code></td></tr>
+    </table>
+
+    <div class="cols">
+      <div>
+        <div class="example-title">Ejemplo request</div>
+<pre class="code"><span class="lbl">POST /productos</span>
+{
+  "codigo": "P001",
+  "nombre": "Producto A",
+  "descripcion": "Producto de ejemplo",
+  "categoria": "General",
+  "unidad_medida": "UNIDAD",
+  "impuesto": 10.1
+}</pre>
+      </div>
+      <div>
+        <div class="example-title">Ejemplo response · 201 ProductoCreated</div>
+<pre class="code">{
+  "producto_id": 1,
+  "codigo": "P001",
+  "estado": "CREADO"
+}</pre>
+      </div>
+    </div>
+
+    <h3>Respuestas</h3>
+    <p>
+      <span class="status s2">201</span> Producto creado (con stock inicializado en 0) ·
+      <span class="status s4">409</span> <code>PRODUCTO_CODIGO_DUPLICADO</code> ·
+      <span class="status s4">422</span> <code>VALIDACION_ERROR</code>
+    </p>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="listar-productos">
+    <h2>Listar productos</h2>
+    <div class="endpoint">
+      <span class="method get">GET</span><span class="path">/productos</span>
+      <span class="opid">operationId: listarProductos</span>
+    </div>
+    <div class="sig">listar_productos(filtro?: str, activo?: bool) -> list[ProductoOut] &nbsp;·&nbsp; servicio: inventory.listar_productos</div>
+
+    <h3>Parámetros query</h3>
+    <table>
+      <tr><th>Parámetro</th><th>Tipo</th><th>Oblig.</th><th>Descripción</th></tr>
+      <tr><td><code>filtro</code></td><td>string (1–50)</td><td class="opt">No</td><td>Código exacto del producto, p. ej. <code>P001</code></td></tr>
+      <tr><td><code>activo</code></td><td>boolean</td><td class="opt">No</td><td><code>true</code> activos · <code>false</code> inactivos</td></tr>
+    </table>
+
+    <div class="cols">
+      <div>
+        <div class="example-title">Ejemplo request</div>
+<pre class="code"><span class="lbl">GET /productos?filtro=P001&activo=true</span></pre>
+      </div>
+      <div>
+        <div class="example-title">Ejemplo response · 200 list[ProductoOut]</div>
+<pre class="code">[
+  {
+    "producto_id": 1,
+    "codigo": "P001",
+    "nombre": "Producto A",
+    "descripcion": "Producto de ejemplo",
+    "categoria": "General",
+    "unidad_medida": "UNIDAD",
+    "impuesto": 10.1,
+    "activo": true
+  }
+]</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="consultar-producto">
+    <h2>Consulta flexible de producto (respuesta agrupada)</h2>
+    <div class="endpoint">
+      <span class="method get">GET</span><span class="path">/productos/{producto_id}</span>
+      <span class="opid">operationId: obtenerProducto</span>
+    </div>
+    <div class="sig">obtener_producto(producto_id: int, include?: str, limite_movimientos?: int) -> ProductoConsultaOut &nbsp;·&nbsp; servicio: inventory.obtener_producto_con_include</div>
+    <p>Devuelve una <b>respuesta agrupada</b> con los bloques solicitados en <code>include</code>.
+       Es una comodidad para consumidores: <b>no reemplaza</b> a <code>GET /stock/{producto_id}</code> ni a <code>GET /stock/movimientos</code>.</p>
+
+    <h3>Parámetros</h3>
+    <table>
+      <tr><th>Parámetro</th><th>Tipo</th><th>Oblig.</th><th>Descripción</th></tr>
+      <tr><td><code>producto_id</code></td><td>integer ≥ 1 (path)</td><td class="req">Sí</td><td>Identificador del producto</td></tr>
+      <tr><td><code>include</code></td><td>string (query, <code>style: form</code>, <code>explode: false</code>)</td><td class="opt">No (default <code>producto</code>)</td>
+        <td>Bloques separados por coma: <code>producto</code> · <code>stock</code> · <code>precios</code> · <code>movimientos</code>.
+            El orden no afecta el resultado y los duplicados se ignoran. Valor no permitido → <span class="status s4">422</span> <code>VALIDACION_ERROR</code>.</td></tr>
+      <tr><td><code>limite_movimientos</code></td><td>integer (query)</td><td class="opt">No (default <code>10</code>)</td>
+        <td>1–50. Solo aplica si <code>include</code> contiene <code>movimientos</code> (más recientes primero, por <code>fecha_movimiento</code> desc.)</td></tr>
+    </table>
+
+    <h3>Response · ProductoConsultaOut (los bloques no solicitados se omiten)</h3>
+    <table>
+      <tr><th>Bloque</th><th>Tipo</th><th>Contenido</th></tr>
+      <tr><td><code>producto</code></td><td>ProductoOut | omitido</td><td>Datos maestros: <code>producto_id, codigo, nombre, descripcion, categoria, unidad_medida, impuesto, activo</code></td></tr>
+      <tr><td><code>stock</code></td><td>StockOut | omitido</td><td><code>producto_id, cantidad_total, cantidad_reservada, cantidad_disponible</code></td></tr>
+      <tr><td><code>precios</code></td><td>PrecioResumenOut | omitido</td><td><code>precio_compra, precio_venta</code> más recientes (null si no hay precio registrado)</td></tr>
+      <tr><td><code>movimientos</code></td><td>list[MovimientoOut] | omitido</td><td>Últimos movimientos del producto (ver <a href="#movimientos">MovimientoOut</a>)</td></tr>
+    </table>
+
+    <div class="cols">
+      <div>
+        <div class="example-title">Ejemplo 1 · include=producto,stock,precios</div>
+<pre class="code"><span class="lbl">GET /productos/1?include=producto,stock,precios</span>
+{
+  "producto": {
+    "producto_id": 1,
+    "codigo": "P001",
+    "nombre": "Producto A",
+    "descripcion": "Producto de ejemplo",
+    "categoria": "General",
+    "unidad_medida": "UNIDAD",
+    "impuesto": 10.1,
+    "activo": true
+  },
+  "stock": {
+    "producto_id": 1,
+    "cantidad_total": 10,
+    "cantidad_reservada": 2,
+    "cantidad_disponible": 8
+  },
+  "precios": {
+    "precio_compra": 9200,
+    "precio_venta": 15230
+  }
+}</pre>
+      </div>
+      <div>
+        <div class="example-title">Ejemplo 2 · include=stock,movimientos</div>
+<pre class="code"><span class="lbl">GET /productos/1?include=stock,movimientos&limite_movimientos=10</span>
+{
+  "stock": {
+    "producto_id": 1,
+    "cantidad_total": 10,
+    "cantidad_reservada": 2,
+    "cantidad_disponible": 8
+  },
+  "movimientos": [
+    {
+      "movimiento_id": 50,
+      "producto_id": 1,
+      "reserva_id": 101,
+      "tipo_movimiento": "VENTA",
+      "origen": "VENTAS",
+      "documento_ref": "FV-001-000123",
+      "comprobante": "STK-001-000001-6",
+      "cantidad": 2,
+      "stock_anterior": 10,
+      "stock_posterior": 8,
+      "observacion": "Confirmación de venta desde reserva"
+    }
+  ]
+}</pre>
+      </div>
+    </div>
+
+    <details>
+      <summary>Más combinaciones válidas de include</summary>
+      <pre class="code">GET /productos/1                       → { "producto": {...} }        (default)
+GET /productos/1?include=producto      → { "producto": {...} }
+GET /productos/1?include=stock         → { "stock": {...} }
+GET /productos/1?include=precios       → { "precios": {...} }
+GET /productos/1?include=producto,stock,precios,movimientos  → los 4 bloques
+GET /productos/1?include=producto,producto,stock → duplicados se ignoran → producto,stock
+GET /productos/1?include=otra_cosa     → 422 VALIDACION_ERROR</pre>
+    </details>
+
+    <h3>Respuestas</h3>
+    <p>
+      <span class="status s2">200</span> Bloques solicitados ·
+      <span class="status s4">404</span> <code>PRODUCTO_NO_EXISTE</code> / <code>STOCK_NO_INICIALIZADO</code> ·
+      <span class="status s4">422</span> <code>VALIDACION_ERROR</code>
+    </p>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="consultar-stock">
+    <h2>Consultar stock actual</h2>
+    <div class="endpoint">
+      <span class="method get">GET</span><span class="path">/stock/{producto_id}</span>
+      <span class="opid">operationId: obtenerStock</span>
+    </div>
+    <div class="sig">obtener_stock(producto_id: int) -> StockOut &nbsp;·&nbsp; servicio: inventory.obtener_stock</div>
+    <p>Consulta específica de cantidades. Valida que el producto exista y que su stock esté inicializado.</p>
+
+    <div class="cols">
+      <div>
+        <div class="example-title">Ejemplo request</div>
+<pre class="code"><span class="lbl">GET /stock/1</span></pre>
+      </div>
+      <div>
+        <div class="example-title">Ejemplo response · 200 StockOut</div>
+<pre class="code">{
+  "producto_id": 1,
+  "cantidad_total": 10,
+  "cantidad_reservada": 2,
+  "cantidad_disponible": 8
+}</pre>
+      </div>
+    </div>
+    <p>
+      <span class="status s2">200</span> ·
+      <span class="status s4">404</span> <code>PRODUCTO_NO_EXISTE</code> / <code>STOCK_NO_INICIALIZADO</code>
+    </p>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="movimientos">
+    <h2>Consultar movimientos de stock</h2>
+    <div class="endpoint">
+      <span class="method get">GET</span><span class="path">/stock/movimientos</span>
+      <span class="opid">operationId: listarMovimientosStock</span>
+    </div>
+    <div class="sig">listar_movimientos(producto_id?: int, documento_ref?: str, tipo_movimiento?: str) -> list[MovimientoOut] &nbsp;·&nbsp; servicio: inventory.listar_movimientos</div>
+    <p>Trazabilidad completa de compras, reservas, ventas, liberaciones y ajustes, ordenada de la más reciente a la más antigua.</p>
+
+    <h3>Parámetros query (todos opcionales)</h3>
+    <table>
+      <tr><th>Parámetro</th><th>Tipo</th><th>Descripción</th></tr>
+      <tr><td><code>producto_id</code></td><td>integer ≥ 1</td><td>Filtra por producto</td></tr>
+      <tr><td><code>documento_ref</code></td><td>string</td><td>Filtra por documento externo, p. ej. <code>FV-001-000123</code></td></tr>
+      <tr><td><code>tipo_movimiento</code></td><td>string (enum)</td><td><code>COMPRA</code> · <code>RESERVA</code> · <code>VENTA</code> · <code>LIBERACION_RESERVA</code> · <code>AJUSTE</code></td></tr>
+    </table>
+
+    <h3>Response · MovimientoOut</h3>
+    <table>
+      <tr><th>Campo</th><th>Tipo</th><th>Descripción</th></tr>
+      <tr><td><code>movimiento_id</code></td><td>integer</td><td>Identificador del movimiento</td></tr>
+      <tr><td><code>producto_id</code></td><td>integer</td><td>Producto afectado</td></tr>
+      <tr><td><code>reserva_id</code></td><td>integer | null</td><td>Reserva asociada (si aplica)</td></tr>
+      <tr><td><code>tipo_movimiento</code></td><td>enum</td><td>Tipo de operación que generó el movimiento</td></tr>
+      <tr><td><code>origen</code></td><td>enum</td><td>Módulo que originó el movimiento</td></tr>
+      <tr><td><code>documento_ref</code></td><td>DocumentoRef | null</td><td>Documento externo (Ventas/Compras)</td></tr>
+      <tr><td><code>comprobante</code></td><td>Comprobante</td><td>Comprobante interno de Stock de la operación</td></tr>
+      <tr><td><code>cantidad</code></td><td>Cantidad</td><td>Cantidad movida</td></tr>
+      <tr><td><code>stock_anterior</code> / <code>stock_posterior</code></td><td>Cantidad</td><td>Saldo total antes / después</td></tr>
+      <tr><td><code>observacion</code></td><td>string | null</td><td>Detalle funcional</td></tr>
+    </table>
+
+    <div class="example-title">Ejemplo</div>
+<pre class="code"><span class="lbl">GET /stock/movimientos?producto_id=1&tipo_movimiento=VENTA</span>
+[
+  {
+    "movimiento_id": 50, "producto_id": 1, "reserva_id": 101,
+    "tipo_movimiento": "VENTA", "origen": "VENTAS",
+    "documento_ref": "FV-001-000123", "comprobante": "STK-001-000001-6",
+    "cantidad": 2, "stock_anterior": 10, "stock_posterior": 8,
+    "observacion": "Confirmación de venta desde reserva"
+  }
+]</pre>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="compras">
+    <h2>Compras · Procesar evento de compra</h2>
+    <div class="endpoint">
+      <span class="method post">POST</span><span class="path">/compras/eventos</span>
+      <span class="opid">operationId: procesarEventoCompra</span>
+      <span class="badge idem">IDEMPOTENTE · clave: mensaje_id</span>
+    </div>
+    <div class="sig">procesar_evento_compra(payload: CompraEventoIn) -> CompraEventoOut &nbsp;·&nbsp; servicio: inventory.procesar_compra</div>
+    <p>Procesa un evento de compra (por HTTP o reenviado desde RabbitMQ), incrementa el stock del producto,
+       registra el precio de compra y el movimiento <code>COMPRA</code>, y genera el <b>comprobante interno</b> de la entrada.
+       <b>Requiere que el producto exista y esté activo.</b></p>
+
+    <h3>Request · CompraEventoIn</h3>
+    <table>
+      <tr><th>Campo</th><th>Tipo</th><th>Oblig.</th><th>Restricciones</th><th>Ejemplo</th></tr>
+      <tr><td><code>mensaje_id</code></td><td>string</td><td class="req">Sí</td><td>1–100 caracteres · clave de idempotencia</td><td><code>"CMP-2026-0001"</code></td></tr>
+      <tr><td><code>referencia_compra</code></td><td>DocumentoRef</td><td class="req">Sí</td><td>documento externo de Compras</td><td><code>"OC-001-000555"</code></td></tr>
+      <tr><td><code>producto_id</code></td><td>integer ≥ 1</td><td class="req">Sí</td><td>producto existente y activo</td><td><code>1</code></td></tr>
+      <tr><td><code>cantidad</code></td><td>CantidadPositiva</td><td class="req">Sí</td><td>&gt; 0, hasta 3 decimales</td><td><code>10</code></td></tr>
+      <tr><td><code>precio_compra</code></td><td>Precio</td><td class="req">Sí</td><td>≥ 0, hasta 2 decimales</td><td><code>9000</code></td></tr>
+      <tr><td><code>proveedor_ref</code></td><td>string | null</td><td class="opt">No</td><td>máx. 80 caracteres</td><td><code>"PROV-001"</code></td></tr>
+    </table>
+
+    <div class="cols">
+      <div>
+        <div class="example-title">Ejemplo request</div>
+<pre class="code"><span class="lbl">POST /compras/eventos</span>
+{
+  "mensaje_id": "CMP-2026-0001",
+  "referencia_compra": "OC-001-000555",
+  "producto_id": 1,
+  "cantidad": 10,
+  "precio_compra": 9000,
+  "proveedor_ref": "PROV-001"
+}</pre>
+      </div>
+      <div>
+        <div class="example-title">Ejemplo response · 200 CompraEventoOut</div>
+<pre class="code">{
+  "mensaje_id": "CMP-2026-0001",
+  "estado_procesamiento": "PROCESADO",
+  "producto_id": 1,
+  "documento_ref": "OC-001-000555",
+  "comprobante": "STK-001-000004-0",
+  "stock_total_actual": 18
+}</pre>
+      </div>
+    </div>
+
+    <h3>Idempotencia</h3>
+    <p>Si el mismo <code>mensaje_id</code> ya fue procesado, la respuesta es <code>estado_procesamiento: "DUPLICADO"</code>
+       (devolviendo el comprobante ya emitido) y <b>no</b> se vuelve a incrementar el stock.</p>
+
+    <h3>Respuestas</h3>
+    <p>
+      <span class="status s2">200</span> PROCESADO / DUPLICADO ·
+      <span class="status s4">400</span> <code>PRODUCTO_INACTIVO</code> ·
+      <span class="status s4">404</span> <code>PRODUCTO_NO_EXISTE</code> / <code>STOCK_NO_INICIALIZADO</code> ·
+      <span class="status s4">409</span> <code>REPLAY_NO_COINCIDE</code> ·
+      <span class="status s4">422</span> <code>VALIDACION_ERROR</code>
+    </p>
+
+    <h3>Diagrama del flujo de compras</h3>
+    <pre class="mermaid">
+%%{init: {"theme": "base", "flowchart": {"htmlLabels": true, "curve": "basis"}, "themeVariables": {"fontFamily": "Inter, Segoe UI, Arial", "background": "#FFFFFF", "mainBkg": "#F8FAFC", "primaryTextColor": "#0F172A", "primaryBorderColor": "#334155", "lineColor": "#64748B", "clusterBkg": "#F8FAFC", "clusterBorder": "#CBD5E1", "edgeLabelBackground": "#FFFFFF"}} }%%
+flowchart LR
+    inicio([Evento de compra recibido]):::start
+    entrada["<b>Payload CompraEventoIn</b><br/>mensaje_id · referencia_compra<br/>producto_id · cantidad · precio_compra"]:::io
+    subgraph PREV["1. Validaciones previas"]
+        direction TB
+        vIdem{"¿mensaje_id<br/>ya PROCESADO?"}:::val
+        vProd{"¿Producto existe<br/>y está activo?"}:::val
+        vStock{"¿Stock inicializado?<br/><small>SELECT ... FOR UPDATE</small>"}:::val
+    end
+    subgraph PROC["2. Proceso transaccional"]
+        direction TB
+        genComp["Generar comprobante interno<br/><b>STK-001-000001-6</b>"]:::proc
+        sumar["Actualizar stock<br/><small>stock_anterior = cantidad_total<br/>cantidad_total += cantidad</small>"]:::proc
+        persistir["Persistir registros<br/><small>COLA_COMPRAS_LOG · PRECIO_COMPRA<br/>MOVIMIENTO_STOCK: COMPRA</small>"]:::proc
+        commit["Confirmar transacción<br/><b>COMMIT</b>"]:::procStrong
+    end
+    subgraph POST["3. Resultado"]
+        direction TB
+        vCommit{"¿COMMIT<br/>sin IntegrityError?"}:::val
+        salida["<b>CompraEventoOut</b><br/>estado_procesamiento · documento_ref<br/>comprobante · stock_total_actual"]:::io
+    end
+    dup["Resultado idempotente<br/><b>DUPLICADO</b><br/><small>devuelve comprobante existente</small>"]:::warn
+    e404p["404<br/><b>PRODUCTO_NO_EXISTE</b>"]:::err
+    e400["400<br/><b>PRODUCTO_INACTIVO</b>"]:::err
+    e404s["404<br/><b>STOCK_NO_INICIALIZADO</b>"]:::err
+    fin([200 OK]):::endOk
+    inicio --> entrada --> vIdem
+    vIdem -- "Sí" --> dup
+    vIdem -- "No" --> vProd
+    vProd -- "No existe" --> e404p
+    vProd -- "Inactivo" --> e400
+    vProd -- "OK" --> vStock
+    vStock -- "No" --> e404s
+    vStock -- "OK" --> genComp
+    genComp --> sumar --> persistir --> commit --> vCommit
+    vCommit -- "IntegrityError" --> dup
+    vCommit -- "OK" --> salida --> fin
+    dup --> fin
+    classDef start fill:#0F766E,stroke:#115E59,stroke-width:2px,color:#FFFFFF
+    classDef endOk fill:#065F46,stroke:#064E3B,stroke-width:2px,color:#FFFFFF
+    classDef io fill:#EFF6FF,stroke:#2563EB,stroke-width:1.5px,color:#1E3A8A
+    classDef val fill:#FEF3C7,stroke:#D97706,stroke-width:1.5px,color:#78350F
+    classDef proc fill:#F1F5F9,stroke:#475569,stroke-width:1.5px,color:#0F172A
+    classDef procStrong fill:#E0F2FE,stroke:#0369A1,stroke-width:2px,color:#0C4A6E
+    classDef err fill:#FEE2E2,stroke:#DC2626,stroke-width:1.5px,color:#7F1D1D
+    classDef warn fill:#FEF9C3,stroke:#CA8A04,stroke-width:1.5px,color:#713F12
+    linkStyle default stroke:#64748B,stroke-width:1.5px,color:#334155
+    </pre>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="reservas">
+    <h2>Reservas · Crear reserva de stock</h2>
+    <div class="endpoint">
+      <span class="method post">POST</span><span class="path">/stock/reservas</span>
+      <span class="opid">operationId: crearReserva</span>
+      <span class="badge idem">IDEMPOTENTE · clave: documento_ref</span>
+    </div>
+    <div class="sig">crear_reserva(payload: ReservaCreate) -> ReservaCreateOut &nbsp;·&nbsp; servicio: inventory.crear_reservas</div>
+    <p>Reserva stock para uno o más productos. Es el <b>paso previo obligatorio a la venta</b>:
+       incrementa <code>cantidad_reservada</code> (sin descontar el total), crea reservas en estado <code>PENDIENTE</code>
+       y registra movimientos <code>RESERVA</code>. Genera <b>un comprobante interno</b> por operación,
+       compartido por todos los ítems.</p>
+
+    <h3>Request · ReservaCreate</h3>
+    <table>
+      <tr><th>Campo</th><th>Tipo</th><th>Oblig.</th><th>Restricciones</th><th>Ejemplo</th></tr>
+      <tr><td><code>documento_ref</code></td><td>DocumentoRef</td><td class="req">Sí</td><td>documento externo de Ventas</td><td><code>"FV-001-000123"</code></td></tr>
+      <tr><td><code>items</code></td><td>list[ReservaItemIn]</td><td class="req">Sí</td><td>mínimo 1 ítem</td><td>—</td></tr>
+      <tr><td><code>items[].producto_id</code></td><td>integer ≥ 1</td><td class="req">Sí</td><td>producto existente y activo</td><td><code>1</code></td></tr>
+      <tr><td><code>items[].cantidad</code></td><td>CantidadPositiva</td><td class="req">Sí</td><td>&gt; 0 y ≤ disponible</td><td><code>2</code></td></tr>
+    </table>
+
+    <div class="cols">
+      <div>
+        <div class="example-title">Ejemplo request</div>
+<pre class="code"><span class="lbl">POST /stock/reservas</span>
+{
+  "documento_ref": "FV-001-000123",
+  "items": [
+    { "producto_id": 1, "cantidad": 2 }
+  ]
+}</pre>
+      </div>
+      <div>
+        <div class="example-title">Ejemplo response · 201 ReservaCreateOut</div>
+<pre class="code">{
+  "estado": "RESERVADO",
+  "documento_ref": "FV-001-000123",
+  "comprobante": "STK-001-000001-6",
+  "reservas": [
+    {
+      "reserva_id": 101,
+      "producto_id": 1,
+      "cantidad_reservada": 2,
+      "cantidad_disponible": 8
+    }
+  ]
+}</pre>
+      </div>
+    </div>
+
+    <div class="note">Guarde el <code>reserva_id</code> y el <code>comprobante</code>: el primero se usa para confirmar o
+      liberar la reserva puntual; el segundo es la prueba interna de que la reserva fue realizada.</div>
+
+    <h3>Respuestas</h3>
+    <p>
+      <span class="status s2">201</span> RESERVADO ·
+      <span class="status s4">400</span> <code>PRODUCTO_INACTIVO</code> ·
+      <span class="status s4">404</span> <code>PRODUCTO_NO_EXISTE</code> / <code>STOCK_NO_INICIALIZADO</code> ·
+      <span class="status s4">409</span> <code>STOCK_INSUFICIENTE</code> / <code>DOCUMENTO_YA_TIENE_RESERVA</code> / <code>REPLAY_NO_COINCIDE</code> / <code>CONFLICTO_CONCURRENCIA</code> ·
+      <span class="status s4">422</span> <code>VALIDACION_ERROR</code>
+    </p>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="confirmar-reserva">
+    <h2>Reservas · Confirmar reserva puntual</h2>
+    <div class="endpoint">
+      <span class="method post">POST</span><span class="path">/stock/reservas/{reserva_id}/confirmar</span>
+      <span class="opid">operationId: confirmarReserva</span>
+      <span class="badge internal">x-internal</span>
+      <span class="badge idem">IDEMPOTENTE · clave: reserva_id</span>
+    </div>
+    <div class="sig">confirmar_reserva(reserva_id: int, payload: ConfirmarReservaIn) -> ConfirmarReservaOut &nbsp;·&nbsp; servicio: inventory.confirmar_reserva</div>
+    <p>Concreta la venta de <b>una</b> reserva <code>PENDIENTE</code>: descuenta <code>cantidad_total</code> y
+       <code>cantidad_reservada</code>, registra el movimiento <code>VENTA</code> (y opcionalmente el precio de venta)
+       y genera el comprobante interno de la confirmación. <i>Operación de uso interno del ecosistema SDI.</i></p>
+
+    <h3>Request · ConfirmarReservaIn</h3>
+    <table>
+      <tr><th>Campo</th><th>Tipo</th><th>Oblig.</th><th>Descripción</th></tr>
+      <tr><td><code>reserva_id</code></td><td>integer ≥ 1 (path)</td><td class="req">Sí</td><td>Reserva a confirmar (debe estar PENDIENTE)</td></tr>
+      <tr><td><code>documento_ref</code></td><td>DocumentoRef | null</td><td class="opt">No</td><td>Documento externo; si se omite se usa el de la reserva</td></tr>
+      <tr><td><code>precio_venta</code></td><td>Precio | null</td><td class="opt">No</td><td>Si se informa, se registra como precio de venta vigente</td></tr>
+    </table>
+
+    <div class="cols">
+      <div>
+        <div class="example-title">Ejemplo request</div>
+<pre class="code"><span class="lbl">POST /stock/reservas/101/confirmar</span>
+{
+  "documento_ref": "FV-001-000123",
+  "precio_venta": 15230
+}</pre>
+      </div>
+      <div>
+        <div class="example-title">Ejemplo response · 200 ConfirmarReservaOut</div>
+<pre class="code">{
+  "estado": "CONFIRMADA",
+  "reserva_id": 101,
+  "producto_id": 1,
+  "documento_ref": "FV-001-000123",
+  "comprobante": "STK-001-000002-4",
+  "cantidad_descontada": 2,
+  "stock_total_actual": 8,
+  "cantidad_reservada_actual": 0,
+  "cantidad_disponible_actual": 8
+}</pre>
+      </div>
+    </div>
+
+    <h3>Respuestas</h3>
+    <p>
+      <span class="status s2">200</span> CONFIRMADA ·
+      <span class="status s4">404</span> <code>RESERVA_NO_EXISTE</code> ·
+      <span class="status s4">409</span> <code>RESERVA_NO_PENDIENTE</code> / <code>OPERACION_YA_PROCESADA</code> / <code>RESERVA_YA_LIBERADA</code> / <code>CONFLICTO_CONCURRENCIA</code> ·
+      <span class="status s4">422</span> <code>VALIDACION_ERROR</code>
+    </p>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="liberar-reserva">
+    <h2>Reservas · Liberar reserva</h2>
+    <div class="endpoint">
+      <span class="method post">POST</span><span class="path">/stock/reservas/{reserva_id}/liberar</span>
+      <span class="opid">operationId: liberarReserva</span>
+      <span class="badge internal">x-internal</span>
+      <span class="badge idem">IDEMPOTENTE · clave: reserva_id</span>
+    </div>
+    <div class="sig">liberar_reserva(reserva_id: int, payload: LiberarReservaIn) -> LiberarReservaOut &nbsp;·&nbsp; servicio: inventory.liberar_reserva</div>
+    <p>Cancela una reserva <code>PENDIENTE</code> cuando la venta no se concreta: devuelve la disponibilidad
+       (reduce <code>cantidad_reservada</code>), registra el movimiento <code>LIBERACION_RESERVA</code> y genera
+       el comprobante interno de la liberación. <i>Operación de uso interno del ecosistema SDI.</i></p>
+
+    <h3>Request · LiberarReservaIn</h3>
+    <table>
+      <tr><th>Campo</th><th>Tipo</th><th>Oblig.</th><th>Restricciones</th><th>Ejemplo</th></tr>
+      <tr><td><code>reserva_id</code></td><td>integer ≥ 1 (path)</td><td class="req">Sí</td><td>Reserva PENDIENTE</td><td><code>101</code></td></tr>
+      <tr><td><code>motivo_liberacion</code></td><td>string</td><td class="req">Sí</td><td>1–200 caracteres</td><td><code>"Cancelación de venta"</code></td></tr>
+    </table>
+
+    <div class="cols">
+      <div>
+        <div class="example-title">Ejemplo request</div>
+<pre class="code"><span class="lbl">POST /stock/reservas/101/liberar</span>
+{
+  "motivo_liberacion": "Cancelación de venta"
+}</pre>
+      </div>
+      <div>
+        <div class="example-title">Ejemplo response · 200 LiberarReservaOut</div>
+<pre class="code">{
+  "estado": "LIBERADA",
+  "reserva_id": 101,
+  "comprobante": "STK-001-000003-2",
+  "cantidad_liberada": 2
+}</pre>
+      </div>
+    </div>
+
+    <h3>Respuestas</h3>
+    <p>
+      <span class="status s2">200</span> LIBERADA ·
+      <span class="status s4">404</span> <code>RESERVA_NO_EXISTE</code> ·
+      <span class="status s4">409</span> <code>RESERVA_NO_PENDIENTE</code> / <code>OPERACION_YA_PROCESADA</code> / <code>RESERVA_YA_CONFIRMADA</code> / <code>CONFLICTO_CONCURRENCIA</code> ·
+      <span class="status s4">422</span> <code>VALIDACION_ERROR</code>
+    </p>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="ventas">
+    <h2>Ventas · Confirmar venta completa</h2>
+    <div class="endpoint">
+      <span class="method post">POST</span><span class="path">/ventas/confirmar</span>
+      <span class="opid">operationId: confirmarVenta</span>
+      <span class="badge idem">IDEMPOTENTE · clave: documento_ref</span>
+    </div>
+    <div class="sig">confirmar_venta(payload: VentaConfirmarIn) -> VentaConfirmarOut &nbsp;·&nbsp; servicio: inventory.confirmar_venta</div>
+    <p>Confirma una venta con múltiples ítems usando las <b>reservas PENDIENTES del mismo <code>documento_ref</code></b>.
+       Cada ítem debe coincidir en producto y cantidad con su reserva. Descuenta el stock en una única transacción,
+       registra movimientos <code>VENTA</code> y precios de venta, y genera <b>un comprobante interno</b> para toda la operación.</p>
+    <div class="warn-box"><b>Prerrequisito:</b> el documento debe tener reservas pendientes creadas con
+      <code>POST /stock/reservas</code>. Sin reserva previa la venta se rechaza con <code>RESERVA_NO_COINCIDE</code>.</div>
+
+    <h3>Request · VentaConfirmarIn</h3>
+    <table>
+      <tr><th>Campo</th><th>Tipo</th><th>Oblig.</th><th>Restricciones</th><th>Ejemplo</th></tr>
+      <tr><td><code>documento_ref</code></td><td>DocumentoRef</td><td class="req">Sí</td><td>mismo documento usado al reservar</td><td><code>"FV-001-000123"</code></td></tr>
+      <tr><td><code>items</code></td><td>list[VentaItemIn]</td><td class="req">Sí</td><td>mínimo 1 ítem</td><td>—</td></tr>
+      <tr><td><code>items[].producto_id</code></td><td>integer ≥ 1</td><td class="req">Sí</td><td>con reserva pendiente del documento</td><td><code>1</code></td></tr>
+      <tr><td><code>items[].cantidad</code></td><td>CantidadPositiva</td><td class="req">Sí</td><td>igual a la cantidad reservada</td><td><code>2</code></td></tr>
+      <tr><td><code>items[].precio_venta</code></td><td>Precio</td><td class="req">Sí</td><td>≥ 0, hasta 2 decimales</td><td><code>15000</code></td></tr>
+    </table>
+
+    <div class="cols">
+      <div>
+        <div class="example-title">Ejemplo request</div>
+<pre class="code"><span class="lbl">POST /ventas/confirmar</span>
+{
+  "documento_ref": "FV-001-000123",
+  "items": [
+    { "producto_id": 1, "cantidad": 2, "precio_venta": 15000 }
+  ]
+}</pre>
+      </div>
+      <div>
+        <div class="example-title">Ejemplo response · 200 VentaConfirmarOut</div>
+<pre class="code">{
+  "estado": "CONFIRMADA",
+  "documento_ref": "FV-001-000123",
+  "comprobante": "STK-001-000005-7"
+}</pre>
+      </div>
+    </div>
+
+    <h3>Respuestas</h3>
+    <p>
+      <span class="status s2">200</span> CONFIRMADA ·
+      <span class="status s4">404</span> <code>PRODUCTO_NO_EXISTE</code> / <code>STOCK_NO_INICIALIZADO</code> ·
+      <span class="status s4">409</span> <code>RESERVA_NO_COINCIDE</code> / <code>DOCUMENTO_YA_PROCESADO</code> / <code>REPLAY_NO_COINCIDE</code> / <code>CONFLICTO_CONCURRENCIA</code> ·
+      <span class="status s4">422</span> <code>VALIDACION_ERROR</code>
+    </p>
+
+    <h3>Diagrama del flujo de ventas (incluye reserva)</h3>
+    <pre class="mermaid">
+%%{init: {"theme": "base", "flowchart": {"htmlLabels": true, "curve": "basis"}, "themeVariables": {"fontFamily": "Inter, Segoe UI, Arial", "background": "#FFFFFF", "mainBkg": "#F8FAFC", "primaryTextColor": "#0F172A", "primaryBorderColor": "#334155", "lineColor": "#64748B", "clusterBkg": "#F8FAFC", "clusterBorder": "#CBD5E1", "edgeLabelBackground": "#FFFFFF"}} }%%
+flowchart LR
+    inicio([Solicitud de venta]):::start
+    subgraph RESERVA["1. Reserva de stock · POST /stock/reservas"]
+        direction TB
+        rEntrada["<b>ReservaCreate</b><br/>documento_ref · items[]"]:::io
+        rvProd{"¿Producto existe<br/>y está activo?"}:::val
+        rvStock{"¿Stock inicializado?<br/><small>bloqueo de fila</small>"}:::val
+        rvDisp{"¿Disponible<br/>mayor o igual a cantidad?"}:::val
+        rGen["Generar comprobante interno"]:::proc
+        rProc["Crear reserva PENDIENTE<br/><small>cantidad_reservada += cantidad<br/>MovimientoStock: RESERVA</small>"]:::proc
+        rCommit["COMMIT"]:::procStrong
+        rSalida["<b>ReservaCreateOut</b><br/>RESERVADO · comprobante · reservas[]"]:::io
+    end
+    decision{"¿La venta<br/>se concreta?"}:::decision
+    subgraph CONFR["2A. Confirmar reserva puntual · POST /stock/reservas/{id}/confirmar"]
+        direction TB
+        cvPend{"¿Reserva existe<br/>y está PENDIENTE?"}:::val
+        cGen["Generar comprobante interno"]:::proc
+        cProc["Confirmar reserva<br/><small>cantidad_total -= reservada<br/>cantidad_reservada -= reservada<br/>MovimientoStock: VENTA</small>"]:::proc
+        cSalida["<b>ConfirmarReservaOut</b><br/>CONFIRMADA · saldos actuales"]:::io
+    end
+    subgraph CONFV["2B. Confirmar venta completa · POST /ventas/confirmar"]
+        direction TB
+        vBusca["Buscar reservas PENDIENTE<br/><small>por documento_ref · FOR UPDATE</small>"]:::proc
+        vvMatch{"¿Cada ítem coincide<br/>con su reserva?"}:::val
+        vGen["Generar comprobante interno"]:::proc
+        vProc["Confirmar venta<br/><small>descontar stock · marcar CONFIRMADA<br/>MovimientoStock: VENTA · PrecioVenta</small>"]:::proc
+        vSalida["<b>VentaConfirmarOut</b><br/>CONFIRMADA · documento_ref · comprobante"]:::io
+    end
+    subgraph LIB["3. Liberar reserva · POST /stock/reservas/{id}/liberar"]
+        direction TB
+        lvPend{"¿Reserva existe<br/>y está PENDIENTE?"}:::val
+        lGen["Generar comprobante interno"]:::proc
+        lProc["Liberar reserva<br/><small>cantidad_reservada -= reservada<br/>MovimientoStock: LIBERACION_RESERVA</small>"]:::proc
+        lSalida["<b>LiberarReservaOut</b><br/>LIBERADA · comprobante · cantidad_liberada"]:::io
+    end
+    e404p["404<br/><b>PRODUCTO_NO_EXISTE</b>"]:::err
+    e400["400<br/><b>PRODUCTO_INACTIVO</b>"]:::err
+    e404s["404<br/><b>STOCK_NO_INICIALIZADO</b>"]:::err
+    e409stk["409<br/><b>STOCK_INSUFICIENTE</b>"]:::err
+    e404r["404<br/><b>RESERVA_NO_EXISTE</b>"]:::err
+    e409np["409<br/><b>RESERVA_NO_PENDIENTE</b>"]:::err
+    e409nc["409<br/><b>RESERVA_NO_COINCIDE</b>"]:::err
+    fin([200 OK]):::endOk
+    inicio --> rEntrada --> rvProd
+    rvProd -- "No existe" --> e404p
+    rvProd -- "Inactivo" --> e400
+    rvProd -- "OK" --> rvStock
+    rvStock -- "No" --> e404s
+    rvStock -- "OK" --> rvDisp
+    rvDisp -- "Insuficiente" --> e409stk
+    rvDisp -- "OK" --> rGen --> rProc --> rCommit --> rSalida --> decision
+    decision -- "Sí · reserva puntual" --> cvPend
+    decision -- "Sí · venta completa" --> vBusca
+    decision -- "No · cancelación" --> lvPend
+    cvPend -- "No existe" --> e404r
+    cvPend -- "No pendiente" --> e409np
+    cvPend -- "OK" --> cGen --> cProc --> cSalida --> fin
+    vBusca --> vvMatch
+    vvMatch -- "No coincide" --> e409nc
+    vvMatch -- "OK" --> vGen --> vProc --> vSalida --> fin
+    lvPend -- "No existe" --> e404r
+    lvPend -- "No pendiente" --> e409np
+    lvPend -- "OK" --> lGen --> lProc --> lSalida --> fin
+    %% Guía invisible para mantener los subgraphs principales en lectura horizontal.
+    rEntrada ~~~ cvPend
+    cvPend ~~~ vBusca
+    vBusca ~~~ lvPend
+    classDef start fill:#0F766E,stroke:#115E59,stroke-width:2px,color:#FFFFFF
+    classDef endOk fill:#065F46,stroke:#064E3B,stroke-width:2px,color:#FFFFFF
+    classDef io fill:#EFF6FF,stroke:#2563EB,stroke-width:1.5px,color:#1E3A8A
+    classDef val fill:#FEF3C7,stroke:#D97706,stroke-width:1.5px,color:#78350F
+    classDef decision fill:#EDE9FE,stroke:#7C3AED,stroke-width:2px,color:#4C1D95
+    classDef proc fill:#F1F5F9,stroke:#475569,stroke-width:1.5px,color:#0F172A
+    classDef procStrong fill:#E0F2FE,stroke:#0369A1,stroke-width:2px,color:#0C4A6E
+    classDef err fill:#FEE2E2,stroke:#DC2626,stroke-width:1.5px,color:#7F1D1D
+    linkStyle default stroke:#64748B,stroke-width:1.5px,color:#334155
+    </pre>
+  </section>
+
+  <!-- ============================================================ -->
+  <section id="errores">
+    <h2>Catálogo de errores</h2>
+    <table>
+      <tr><th>HTTP</th><th>Código</th><th>Significado</th></tr>
+      <tr><td><span class="status s4">400</span></td><td><code>PRODUCTO_INACTIVO</code></td><td>El producto existe pero no puede operar</td></tr>
+      <tr><td><span class="status s4">401</span></td><td><code>NO_AUTENTICADO</code></td><td>Falta credencial válida</td></tr>
+      <tr><td><span class="status s4">403</span></td><td><code>ACCESO_DENEGADO</code></td><td>Sin permiso para la operación</td></tr>
+      <tr><td><span class="status s4">404</span></td><td><code>PRODUCTO_NO_EXISTE</code></td><td>El producto solicitado no existe</td></tr>
+      <tr><td><span class="status s4">404</span></td><td><code>STOCK_NO_INICIALIZADO</code></td><td>El producto no tiene registro de stock inicial</td></tr>
+      <tr><td><span class="status s4">404</span></td><td><code>RESERVA_NO_EXISTE</code></td><td>La reserva solicitada no existe</td></tr>
+      <tr><td><span class="status s4">409</span></td><td><code>PRODUCTO_CODIGO_DUPLICADO</code></td><td>Ya existe un producto con el mismo código</td></tr>
+      <tr><td><span class="status s4">409</span></td><td><code>STOCK_INSUFICIENTE</code></td><td>Disponible menor que la cantidad solicitada</td></tr>
+      <tr><td><span class="status s4">409</span></td><td><code>RESERVA_NO_PENDIENTE</code></td><td>La reserva ya fue confirmada o liberada</td></tr>
+      <tr><td><span class="status s4">409</span></td><td><code>RESERVA_NO_COINCIDE</code></td><td>La venta no coincide con una reserva pendiente</td></tr>
+      <tr><td><span class="status s4">409</span></td><td><code>MENSAJE_DUPLICADO</code></td><td>El mensaje de compra ya fue procesado</td></tr>
+      <tr><td><span class="status s4">409</span></td><td><code>REPLAY_NO_COINCIDE</code></td><td>Misma clave idempotente con contenido diferente</td></tr>
+      <tr><td><span class="status s4">409</span></td><td><code>OPERACION_YA_PROCESADA</code> / <code>DOCUMENTO_YA_PROCESADO</code></td><td>Repetición de operación ya concretada</td></tr>
+      <tr><td><span class="status s4">409</span></td><td><code>RESERVA_YA_CONFIRMADA</code> / <code>RESERVA_YA_LIBERADA</code></td><td>Estado final que impide la operación pedida</td></tr>
+      <tr><td><span class="status s4">409</span></td><td><code>DOCUMENTO_YA_TIENE_RESERVA</code></td><td>El documento externo ya posee una reserva</td></tr>
+      <tr><td><span class="status s4">409</span></td><td><code>CONFLICTO_CONCURRENCIA</code></td><td>El stock o la reserva fue modificado por otra operación concurrente</td></tr>
+      <tr><td><span class="status s4">422</span></td><td><code>VALIDACION_ERROR</code></td><td>El request no cumple el contrato OpenAPI (incluye <code>include</code> inválido)</td></tr>
+      <tr><td><span class="status s5">500</span></td><td><code>ERROR_INTERNO</code></td><td>Error interno controlado</td></tr>
+      <tr><td><span class="status s5">default</span></td><td><code>ERROR_NO_CONTROLADO</code></td><td>Error no clasificado por el contrato</td></tr>
+    </table>
+    <p>Los reintentos idempotentes (misma clave y mismo contenido) devuelven el resultado ya conocido sin duplicar
+       reservas, movimientos ni descuentos de stock.</p>
+  </section>
+
+  <footer>
+    SDI · Sistema Distribuido de Inventario — Módulo Stock · Documentación generada a partir del contrato
+    <code>openapi.yaml</code> y del código en <code>app/</code>.
+  </footer>
+</main>
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({ startOnLoad: true });
+</script>
+</body>
+</html>

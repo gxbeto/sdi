@@ -1,0 +1,13 @@
+# Entorno virtual y caches de Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Configuración con credenciales: NUNCA se versiona. Usar .env.example como plantilla.
+.env
+.env.bak
+
+# Archivos temporales
+*.tmp
+*.log

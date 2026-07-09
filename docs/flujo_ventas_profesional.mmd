@@ -1,0 +1,101 @@
+%% ============================================================
+%% FLUJO DE VENTAS CON RESERVA - Módulo SDI Stock
+%% Endpoints: POST /stock/reservas, POST /ventas/confirmar,
+%%            POST /stock/reservas/{id}/confirmar, POST /stock/reservas/{id}/liberar
+%% Versión visual mejorada: paleta profesional, separación por etapas y rutas claras.
+%% ============================================================
+%%{init: {"theme": "base", "flowchart": {"htmlLabels": true, "curve": "basis"}, "themeVariables": {"fontFamily": "Inter, Segoe UI, Arial", "background": "#FFFFFF", "mainBkg": "#F8FAFC", "primaryTextColor": "#0F172A", "primaryBorderColor": "#334155", "lineColor": "#64748B", "clusterBkg": "#F8FAFC", "clusterBorder": "#CBD5E1", "edgeLabelBackground": "#FFFFFF"}} }%%
+
+flowchart LR
+    inicio([Solicitud de venta]):::start
+
+    subgraph RESERVA["1. Reserva de stock · POST /stock/reservas"]
+        direction TB
+        rEntrada["<b>ReservaCreate</b><br/>documento_ref · items[]"]:::io
+
+        rvProd{"¿Producto existe<br/>y está activo?"}:::val
+        rvStock{"¿Stock inicializado?<br/><small>bloqueo de fila</small>"}:::val
+        rvDisp{"¿Disponible<br/>mayor o igual a cantidad?"}:::val
+
+        rGen["Generar comprobante interno"]:::proc
+        rProc["Crear reserva PENDIENTE<br/><small>cantidad_reservada += cantidad<br/>MovimientoStock: RESERVA</small>"]:::proc
+        rCommit["COMMIT"]:::procStrong
+        rSalida["<b>ReservaCreateOut</b><br/>RESERVADO · comprobante · reservas[]"]:::io
+    end
+
+    decision{"¿La venta<br/>se concreta?"}:::decision
+
+    subgraph CONFR["2A. Confirmar reserva puntual · POST /stock/reservas/{id}/confirmar"]
+        direction TB
+        cvPend{"¿Reserva existe<br/>y está PENDIENTE?"}:::val
+        cGen["Generar comprobante interno"]:::proc
+        cProc["Confirmar reserva<br/><small>cantidad_total -= reservada<br/>cantidad_reservada -= reservada<br/>MovimientoStock: VENTA</small>"]:::proc
+        cSalida["<b>ConfirmarReservaOut</b><br/>CONFIRMADA · saldos actuales"]:::io
+    end
+
+    subgraph CONFV["2B. Confirmar venta completa · POST /ventas/confirmar"]
+        direction TB
+        vBusca["Buscar reservas PENDIENTE<br/><small>por documento_ref · FOR UPDATE</small>"]:::proc
+        vvMatch{"¿Cada ítem coincide<br/>con su reserva?"}:::val
+        vGen["Generar comprobante interno"]:::proc
+        vProc["Confirmar venta<br/><small>descontar stock · marcar CONFIRMADA<br/>MovimientoStock: VENTA · PrecioVenta</small>"]:::proc
+        vSalida["<b>VentaConfirmarOut</b><br/>CONFIRMADA · documento_ref · comprobante"]:::io
+    end
+
+    subgraph LIB["3. Liberar reserva · POST /stock/reservas/{id}/liberar"]
+        direction TB
+        lvPend{"¿Reserva existe<br/>y está PENDIENTE?"}:::val
+        lGen["Generar comprobante interno"]:::proc
+        lProc["Liberar reserva<br/><small>cantidad_reservada -= reservada<br/>MovimientoStock: LIBERACION_RESERVA</small>"]:::proc
+        lSalida["<b>LiberarReservaOut</b><br/>LIBERADA · comprobante · cantidad_liberada"]:::io
+    end
+
+    e404p["404<br/><b>PRODUCTO_NO_EXISTE</b>"]:::err
+    e400["400<br/><b>PRODUCTO_INACTIVO</b>"]:::err
+    e404s["404<br/><b>STOCK_NO_INICIALIZADO</b>"]:::err
+    e409stk["409<br/><b>STOCK_INSUFICIENTE</b>"]:::err
+    e404r["404<br/><b>RESERVA_NO_EXISTE</b>"]:::err
+    e409np["409<br/><b>RESERVA_NO_PENDIENTE</b>"]:::err
+    e409nc["409<br/><b>RESERVA_NO_COINCIDE</b>"]:::err
+    fin([200 OK]):::endOk
+
+    inicio --> rEntrada --> rvProd
+    rvProd -- "No existe" --> e404p
+    rvProd -- "Inactivo" --> e400
+    rvProd -- "OK" --> rvStock
+    rvStock -- "No" --> e404s
+    rvStock -- "OK" --> rvDisp
+    rvDisp -- "Insuficiente" --> e409stk
+    rvDisp -- "OK" --> rGen --> rProc --> rCommit --> rSalida --> decision
+
+    decision -- "Sí · reserva puntual" --> cvPend
+    decision -- "Sí · venta completa" --> vBusca
+    decision -- "No · cancelación" --> lvPend
+
+    cvPend -- "No existe" --> e404r
+    cvPend -- "No pendiente" --> e409np
+    cvPend -- "OK" --> cGen --> cProc --> cSalida --> fin
+
+    vBusca --> vvMatch
+    vvMatch -- "No coincide" --> e409nc
+    vvMatch -- "OK" --> vGen --> vProc --> vSalida --> fin
+
+    lvPend -- "No existe" --> e404r
+    lvPend -- "No pendiente" --> e409np
+    lvPend -- "OK" --> lGen --> lProc --> lSalida --> fin
+
+    %% Guía invisible para mantener los subgraphs principales en lectura horizontal.
+    rEntrada ~~~ cvPend
+    cvPend ~~~ vBusca
+    vBusca ~~~ lvPend
+
+    classDef start fill:#0F766E,stroke:#115E59,stroke-width:2px,color:#FFFFFF
+    classDef endOk fill:#065F46,stroke:#064E3B,stroke-width:2px,color:#FFFFFF
+    classDef io fill:#EFF6FF,stroke:#2563EB,stroke-width:1.5px,color:#1E3A8A
+    classDef val fill:#FEF3C7,stroke:#D97706,stroke-width:1.5px,color:#78350F
+    classDef decision fill:#EDE9FE,stroke:#7C3AED,stroke-width:2px,color:#4C1D95
+    classDef proc fill:#F1F5F9,stroke:#475569,stroke-width:1.5px,color:#0F172A
+    classDef procStrong fill:#E0F2FE,stroke:#0369A1,stroke-width:2px,color:#0C4A6E
+    classDef err fill:#FEE2E2,stroke:#DC2626,stroke-width:1.5px,color:#7F1D1D
+
+    linkStyle default stroke:#64748B,stroke-width:1.5px,color:#334155

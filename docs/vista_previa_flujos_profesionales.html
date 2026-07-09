@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Flujos SDI Stock - Vista previa profesional</title>
+  <style>
+    body { font-family: Inter, Segoe UI, Arial, sans-serif; margin: 0; background: #F8FAFC; color: #0F172A; }
+    main { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
+    h1 { margin: 0 0 8px; font-size: 28px; }
+    p { color: #475569; margin-top: 0; }
+    section { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 16px; padding: 24px; margin: 24px 0; box-shadow: 0 10px 25px rgba(15, 23, 42, 0.06); overflow-x: auto; }
+    h2 { font-size: 20px; margin: 0 0 16px; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Flujos SDI Stock</h1>
+  <p>Vista previa con paleta profesional, mayor contraste y separación por etapas.</p>
+
+  <section>
+    <h2>Flujo de compras</h2>
+    <pre class="mermaid">
+%%{init: {"theme": "base", "flowchart": {"htmlLabels": true, "curve": "basis"}, "themeVariables": {"fontFamily": "Inter, Segoe UI, Arial", "background": "#FFFFFF", "mainBkg": "#F8FAFC", "primaryTextColor": "#0F172A", "primaryBorderColor": "#334155", "lineColor": "#64748B", "clusterBkg": "#F8FAFC", "clusterBorder": "#CBD5E1", "edgeLabelBackground": "#FFFFFF"}} }%%
+flowchart LR
+    inicio([Evento de compra recibido]):::start
+    entrada["<b>Payload CompraEventoIn</b><br/>mensaje_id · referencia_compra<br/>producto_id · cantidad · precio_compra"]:::io
+    subgraph PREV["1. Validaciones previas"]
+        direction TB
+        vIdem{"¿mensaje_id<br/>ya PROCESADO?"}:::val
+        vProd{"¿Producto existe<br/>y está activo?"}:::val
+        vStock{"¿Stock inicializado?<br/><small>SELECT ... FOR UPDATE</small>"}:::val
+    end
+    subgraph PROC["2. Proceso transaccional"]
+        direction TB
+        genComp["Generar comprobante interno<br/><b>STK-001-000001-6</b>"]:::proc
+        sumar["Actualizar stock<br/><small>stock_anterior = cantidad_total<br/>cantidad_total += cantidad</small>"]:::proc
+        persistir["Persistir registros<br/><small>COLA_COMPRAS_LOG · PRECIO_COMPRA<br/>MOVIMIENTO_STOCK: COMPRA</small>"]:::proc
+        commit["Confirmar transacción<br/><b>COMMIT</b>"]:::procStrong
+    end
+    subgraph POST["3. Resultado"]
+        direction TB
+        vCommit{"¿COMMIT<br/>sin IntegrityError?"}:::val
+        salida["<b>CompraEventoOut</b><br/>estado_procesamiento · documento_ref<br/>comprobante · stock_total_actual"]:::io
+    end
+    dup["Resultado idempotente<br/><b>DUPLICADO</b><br/><small>devuelve comprobante existente</small>"]:::warn
+    e404p["404<br/><b>PRODUCTO_NO_EXISTE</b>"]:::err
+    e400["400<br/><b>PRODUCTO_INACTIVO</b>"]:::err
+    e404s["404<br/><b>STOCK_NO_INICIALIZADO</b>"]:::err
+    fin([200 OK]):::endOk
+    inicio --> entrada --> vIdem
+    vIdem -- "Sí" --> dup
+    vIdem -- "No" --> vProd
+    vProd -- "No existe" --> e404p
+    vProd -- "Inactivo" --> e400
+    vProd -- "OK" --> vStock
+    vStock -- "No" --> e404s
+    vStock -- "OK" --> genComp
+    genComp --> sumar --> persistir --> commit --> vCommit
+    vCommit -- "IntegrityError" --> dup
+    vCommit -- "OK" --> salida --> fin
+    dup --> fin
+    classDef start fill:#0F766E,stroke:#115E59,stroke-width:2px,color:#FFFFFF
+    classDef endOk fill:#065F46,stroke:#064E3B,stroke-width:2px,color:#FFFFFF
+    classDef io fill:#EFF6FF,stroke:#2563EB,stroke-width:1.5px,color:#1E3A8A
+    classDef val fill:#FEF3C7,stroke:#D97706,stroke-width:1.5px,color:#78350F
+    classDef proc fill:#F1F5F9,stroke:#475569,stroke-width:1.5px,color:#0F172A
+    classDef procStrong fill:#E0F2FE,stroke:#0369A1,stroke-width:2px,color:#0C4A6E
+    classDef err fill:#FEE2E2,stroke:#DC2626,stroke-width:1.5px,color:#7F1D1D
+    classDef warn fill:#FEF9C3,stroke:#CA8A04,stroke-width:1.5px,color:#713F12
+    linkStyle default stroke:#64748B,stroke-width:1.5px,color:#334155
+    </pre>
+  </section>
+
+  <section>
+    <h2>Flujo de ventas con reserva</h2>
+    <pre class="mermaid">
+%%{init: {"theme": "base", "flowchart": {"htmlLabels": true, "curve": "basis"}, "themeVariables": {"fontFamily": "Inter, Segoe UI, Arial", "background": "#FFFFFF", "mainBkg": "#F8FAFC", "primaryTextColor": "#0F172A", "primaryBorderColor": "#334155", "lineColor": "#64748B", "clusterBkg": "#F8FAFC", "clusterBorder": "#CBD5E1", "edgeLabelBackground": "#FFFFFF"}} }%%
+flowchart LR
+    inicio([Solicitud de venta]):::start
+    subgraph RESERVA["1. Reserva de stock · POST /stock/reservas"]
+        direction TB
+        rEntrada["<b>ReservaCreate</b><br/>documento_ref · items[]"]:::io
+        rvProd{"¿Producto existe<br/>y está activo?"}:::val
+        rvStock{"¿Stock inicializado?<br/><small>bloqueo de fila</small>"}:::val
+        rvDisp{"¿Disponible<br/>mayor o igual a cantidad?"}:::val
+        rGen["Generar comprobante interno"]:::proc
+        rProc["Crear reserva PENDIENTE<br/><small>cantidad_reservada += cantidad<br/>MovimientoStock: RESERVA</small>"]:::proc
+        rCommit["COMMIT"]:::procStrong
+        rSalida["<b>ReservaCreateOut</b><br/>RESERVADO · comprobante · reservas[]"]:::io
+    end
+    decision{"¿La venta<br/>se concreta?"}:::decision
+    subgraph CONFR["2A. Confirmar reserva puntual · POST /stock/reservas/{id}/confirmar"]
+        direction TB
+        cvPend{"¿Reserva existe<br/>y está PENDIENTE?"}:::val
+        cGen["Generar comprobante interno"]:::proc
+        cProc["Confirmar reserva<br/><small>cantidad_total -= reservada<br/>cantidad_reservada -= reservada<br/>MovimientoStock: VENTA</small>"]:::proc
+        cSalida["<b>ConfirmarReservaOut</b><br/>CONFIRMADA · saldos actuales"]:::io
+    end
+    subgraph CONFV["2B. Confirmar venta completa · POST /ventas/confirmar"]
+        direction TB
+        vBusca["Buscar reservas PENDIENTE<br/><small>por documento_ref · FOR UPDATE</small>"]:::proc
+        vvMatch{"¿Cada ítem coincide<br/>con su reserva?"}:::val
+        vGen["Generar comprobante interno"]:::proc
+        vProc["Confirmar venta<br/><small>descontar stock · marcar CONFIRMADA<br/>MovimientoStock: VENTA · PrecioVenta</small>"]:::proc
+        vSalida["<b>VentaConfirmarOut</b><br/>CONFIRMADA · documento_ref · comprobante"]:::io
+    end
+    subgraph LIB["3. Liberar reserva · POST /stock/reservas/{id}/liberar"]
+        direction TB
+        lvPend{"¿Reserva existe<br/>y está PENDIENTE?"}:::val
+        lGen["Generar comprobante interno"]:::proc
+        lProc["Liberar reserva<br/><small>cantidad_reservada -= reservada<br/>MovimientoStock: LIBERACION_RESERVA</small>"]:::proc
+        lSalida["<b>LiberarReservaOut</b><br/>LIBERADA · comprobante · cantidad_liberada"]:::io
+    end
+    e404p["404<br/><b>PRODUCTO_NO_EXISTE</b>"]:::err
+    e400["400<br/><b>PRODUCTO_INACTIVO</b>"]:::err
+    e404s["404<br/><b>STOCK_NO_INICIALIZADO</b>"]:::err
+    e409stk["409<br/><b>STOCK_INSUFICIENTE</b>"]:::err
+    e404r["404<br/><b>RESERVA_NO_EXISTE</b>"]:::err
+    e409np["409<br/><b>RESERVA_NO_PENDIENTE</b>"]:::err
+    e409nc["409<br/><b>RESERVA_NO_COINCIDE</b>"]:::err
+    fin([200 OK]):::endOk
+    inicio --> rEntrada --> rvProd
+    rvProd -- "No existe" --> e404p
+    rvProd -- "Inactivo" --> e400
+    rvProd -- "OK" --> rvStock
+    rvStock -- "No" --> e404s
+    rvStock -- "OK" --> rvDisp
+    rvDisp -- "Insuficiente" --> e409stk
+    rvDisp -- "OK" --> rGen --> rProc --> rCommit --> rSalida --> decision
+    decision -- "Sí · reserva puntual" --> cvPend
+    decision -- "Sí · venta completa" --> vBusca
+    decision -- "No · cancelación" --> lvPend
+    cvPend -- "No existe" --> e404r
+    cvPend -- "No pendiente" --> e409np
+    cvPend -- "OK" --> cGen --> cProc --> cSalida --> fin
+    vBusca --> vvMatch
+    vvMatch -- "No coincide" --> e409nc
+    vvMatch -- "OK" --> vGen --> vProc --> vSalida --> fin
+    lvPend -- "No existe" --> e404r
+    lvPend -- "No pendiente" --> e409np
+    lvPend -- "OK" --> lGen --> lProc --> lSalida --> fin
+    %% Guía invisible para mantener los subgraphs principales en lectura horizontal.
+    rEntrada ~~~ cvPend
+    cvPend ~~~ vBusca
+    vBusca ~~~ lvPend
+    classDef start fill:#0F766E,stroke:#115E59,stroke-width:2px,color:#FFFFFF
+    classDef endOk fill:#065F46,stroke:#064E3B,stroke-width:2px,color:#FFFFFF
+    classDef io fill:#EFF6FF,stroke:#2563EB,stroke-width:1.5px,color:#1E3A8A
+    classDef val fill:#FEF3C7,stroke:#D97706,stroke-width:1.5px,color:#78350F
+    classDef decision fill:#EDE9FE,stroke:#7C3AED,stroke-width:2px,color:#4C1D95
+    classDef proc fill:#F1F5F9,stroke:#475569,stroke-width:1.5px,color:#0F172A
+    classDef procStrong fill:#E0F2FE,stroke:#0369A1,stroke-width:2px,color:#0C4A6E
+    classDef err fill:#FEE2E2,stroke:#DC2626,stroke-width:1.5px,color:#7F1D1D
+    linkStyle default stroke:#64748B,stroke-width:1.5px,color:#334155
+    </pre>
+  </section>
+</main>
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({ startOnLoad: true });
+</script>
+</body>
+</html>

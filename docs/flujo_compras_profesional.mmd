@@ -1,0 +1,62 @@
+%% ============================================================
+%% FLUJO DE COMPRAS - Módulo SDI Stock
+%% Endpoint: POST /compras/eventos
+%% Versión visual mejorada: paleta profesional, alto contraste y lectura limpia.
+%% ============================================================
+%%{init: {"theme": "base", "flowchart": {"htmlLabels": true, "curve": "basis"}, "themeVariables": {"fontFamily": "Inter, Segoe UI, Arial", "background": "#FFFFFF", "mainBkg": "#F8FAFC", "primaryTextColor": "#0F172A", "primaryBorderColor": "#334155", "lineColor": "#64748B", "clusterBkg": "#F8FAFC", "clusterBorder": "#CBD5E1", "edgeLabelBackground": "#FFFFFF"}} }%%
+
+flowchart LR
+    inicio([Evento de compra recibido]):::start
+
+    entrada["<b>Payload CompraEventoIn</b><br/>mensaje_id · referencia_compra<br/>producto_id · cantidad · precio_compra"]:::io
+
+    subgraph PREV["1. Validaciones previas"]
+        direction TB
+        vIdem{"¿mensaje_id<br/>ya PROCESADO?"}:::val
+        vProd{"¿Producto existe<br/>y está activo?"}:::val
+        vStock{"¿Stock inicializado?<br/><small>SELECT ... FOR UPDATE</small>"}:::val
+    end
+
+    subgraph PROC["2. Proceso transaccional"]
+        direction TB
+        genComp["Generar comprobante interno<br/><b>STK-001-000001-6</b>"]:::proc
+        sumar["Actualizar stock<br/><small>stock_anterior = cantidad_total<br/>cantidad_total += cantidad</small>"]:::proc
+        persistir["Persistir registros<br/><small>COLA_COMPRAS_LOG · PRECIO_COMPRA<br/>MOVIMIENTO_STOCK: COMPRA</small>"]:::proc
+        commit["Confirmar transacción<br/><b>COMMIT</b>"]:::procStrong
+    end
+
+    subgraph POST["3. Resultado"]
+        direction TB
+        vCommit{"¿COMMIT<br/>sin IntegrityError?"}:::val
+        salida["<b>CompraEventoOut</b><br/>estado_procesamiento · documento_ref<br/>comprobante · stock_total_actual"]:::io
+    end
+
+    dup["Resultado idempotente<br/><b>DUPLICADO</b><br/><small>devuelve comprobante existente</small>"]:::warn
+    e404p["404<br/><b>PRODUCTO_NO_EXISTE</b>"]:::err
+    e400["400<br/><b>PRODUCTO_INACTIVO</b>"]:::err
+    e404s["404<br/><b>STOCK_NO_INICIALIZADO</b>"]:::err
+    fin([200 OK]):::endOk
+
+    inicio --> entrada --> vIdem
+    vIdem -- "Sí" --> dup
+    vIdem -- "No" --> vProd
+    vProd -- "No existe" --> e404p
+    vProd -- "Inactivo" --> e400
+    vProd -- "OK" --> vStock
+    vStock -- "No" --> e404s
+    vStock -- "OK" --> genComp
+    genComp --> sumar --> persistir --> commit --> vCommit
+    vCommit -- "IntegrityError" --> dup
+    vCommit -- "OK" --> salida --> fin
+    dup --> fin
+
+    classDef start fill:#0F766E,stroke:#115E59,stroke-width:2px,color:#FFFFFF
+    classDef endOk fill:#065F46,stroke:#064E3B,stroke-width:2px,color:#FFFFFF
+    classDef io fill:#EFF6FF,stroke:#2563EB,stroke-width:1.5px,color:#1E3A8A
+    classDef val fill:#FEF3C7,stroke:#D97706,stroke-width:1.5px,color:#78350F
+    classDef proc fill:#F1F5F9,stroke:#475569,stroke-width:1.5px,color:#0F172A
+    classDef procStrong fill:#E0F2FE,stroke:#0369A1,stroke-width:2px,color:#0C4A6E
+    classDef err fill:#FEE2E2,stroke:#DC2626,stroke-width:1.5px,color:#7F1D1D
+    classDef warn fill:#FEF9C3,stroke:#CA8A04,stroke-width:1.5px,color:#713F12
+
+    linkStyle default stroke:#64748B,stroke-width:1.5px,color:#334155
