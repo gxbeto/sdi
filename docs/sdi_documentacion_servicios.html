@@ -1,9 +1,9 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="es">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SDI Stock - DocumentaciÃ³n de servicios</title>
+  <title>SDI Stock - Documentación de servicios</title>
   <style>
     :root {
       --bg: #F8FAFC; --card: #FFFFFF; --border: #E2E8F0; --text: #0F172A;
@@ -19,7 +19,7 @@
     p.lead { color: var(--muted); margin-top: 0; font-size: 15px; }
     section { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px 28px; margin: 24px 0; box-shadow: 0 10px 25px rgba(15,23,42,.06); overflow-x: auto; }
 
-    /* NavegaciÃ³n */
+    /* Navegación */
     nav.toc { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 18px 24px; margin: 24px 0; }
     nav.toc strong { display: block; margin-bottom: 8px; }
     nav.toc a { color: var(--blue); text-decoration: none; margin-right: 18px; font-size: 14px; white-space: nowrap; display: inline-block; margin-bottom: 4px; }
@@ -68,10 +68,10 @@
 </head>
 <body>
 <main>
-  <h1>SDI Stock Â· DocumentaciÃ³n de servicios</h1>
+  <h1>SDI Stock · Documentación de servicios</h1>
   <p class="lead">
-    API REST del mÃ³dulo de Stock del Sistema Distribuido de Inventario.
-    Contrato OpenAPI 3.2 generado desde el cÃ³digo (<code>scripts/generate_openapi_yaml.py</code> â†’ <code>openapi.yaml</code>).
+    API REST del módulo de Stock del Sistema Distribuido de Inventario.
+    Contrato OpenAPI 3.2 generado desde el código (<code>scripts/generate_openapi_yaml.py</code> → <code>openapi.yaml</code>).
   </p>
 
   <nav class="toc">
@@ -88,7 +88,7 @@
     <a href="#confirmar-reserva">Confirmar reserva</a>
     <a href="#liberar-reserva">Liberar reserva</a>
     <a href="#ventas">Ventas</a>
-    <a href="#errores">CatÃ¡logo de errores</a>
+    <a href="#errores">Catálogo de errores</a>
   </nav>
 
   <!-- ============================================================ -->
@@ -97,14 +97,14 @@
 
     <h3>Servidores</h3>
     <table>
-      <tr><th>URL</th><th>DescripciÃ³n</th></tr>
+      <tr><th>URL</th><th>Descripción</th></tr>
       <tr><td><code>http://127.0.0.1:8000</code></td><td>Ambiente local de desarrollo</td></tr>
-      <tr><td><code>http://sdi-pruebas.example.com:6000</code></td><td>Ambiente de pruebas / integraciÃ³n</td></tr>
+      <tr><td><code>http://158.220.111.78:8181</code></td><td>Ambiente de pruebas / integración</td></tr>
     </table>
 
     <h3>Orden conceptual de las operaciones</h3>
     <div class="note">
-      <b>1.</b> Para <b>comprar</b> un producto, primero hay que <b>crearlo</b> (la creaciÃ³n inicializa su stock en cero).<br/>
+      <b>1.</b> Para <b>comprar</b> un producto, primero hay que <b>crearlo</b> (la creación inicializa su stock en cero).<br/>
       <b>2.</b> Para <b>vender</b> un producto, primero hay que <b>reservarlo</b> (la venta se concreta confirmando la reserva; si se cancela, se libera).
     </div>
 
@@ -115,35 +115,35 @@
         <td><code>documento_ref</code></td>
         <td>Documento <b>externo</b> recibido desde Ventas o Compras</td>
         <td><code>^[A-Z]{2,3}-\d{3}-\d{6}$</code></td>
-        <td><code>FV-001-000123</code> Â· <code>OC-001-000555</code></td>
+        <td><code>FV-001-000123</code> · <code>OC-001-000555</code></td>
         <td>Trazabilidad externa</td>
       </tr>
       <tr>
         <td><code>comprobante</code></td>
-        <td>Comprobante <b>interno</b> generado por Stock en cada operaciÃ³n</td>
+        <td>Comprobante <b>interno</b> generado por Stock en cada operación</td>
         <td><code>^STK-\d{3}-\d{6}-\d$</code></td>
         <td><code>STK-001-000001-6</code></td>
-        <td>Trazabilidad interna. Prueba de que la operaciÃ³n anterior se realizÃ³</td>
+        <td>Trazabilidad interna. Prueba de que la operación anterior se realizó</td>
       </tr>
     </table>
     <div class="warn-box">
-      El Ãºltimo dÃ­gito del <code>comprobante</code> es un <b>dÃ­gito verificador</b> (algoritmo de Luhn sobre los 9 dÃ­gitos de
+      El último dígito del <code>comprobante</code> es un <b>dígito verificador</b> (algoritmo de Luhn sobre los 9 dígitos de
       serie + correlativo). Permite validar de entrada si un comprobante es oficial sin consultar el sistema.
       El <code>comprobante</code> <b>no reemplaza</b> a <code>documento_ref</code>: conviven en las respuestas y en los movimientos.
     </div>
 
-    <h3>PolÃ­tica numÃ©rica (x-numeric-policy)</h3>
+    <h3>Política numérica (x-numeric-policy)</h3>
     <table>
-      <tr><th>Grupo</th><th>Tipo JSON</th><th>PrecisiÃ³n</th><th>Regla</th></tr>
-      <tr><td>Cantidades</td><td><code>number</code></td><td>Hasta 3 decimales (<code>multipleOf: 0.001</code>)</td><td>Entradas &gt; 0 Â· saldos y salidas â‰¥ 0</td></tr>
-      <tr><td>Precios</td><td><code>number</code></td><td>Hasta 2 decimales (<code>multipleOf: 0.01</code>)</td><td>â‰¥ 0 Â· sin campo moneda</td></tr>
+      <tr><th>Grupo</th><th>Tipo JSON</th><th>Precisión</th><th>Regla</th></tr>
+      <tr><td>Cantidades</td><td><code>number</code></td><td>Hasta 3 decimales (<code>multipleOf: 0.001</code>)</td><td>Entradas &gt; 0 · saldos y salidas ≥ 0</td></tr>
+      <tr><td>Precios</td><td><code>number</code></td><td>Hasta 2 decimales (<code>multipleOf: 0.01</code>)</td><td>≥ 0 · sin campo moneda</td></tr>
       <tr><td>Impuesto</td><td><code>number</code></td><td>Hasta 2 decimales</td><td>Entre 0 y 100</td></tr>
     </table>
-    <p>Los valores numÃ©ricos viajan como nÃºmeros JSON (<code>"cantidad": 2.5</code>), nunca como string ni como entero forzado.</p>
+    <p>Los valores numéricos viajan como números JSON (<code>"cantidad": 2.5</code>), nunca como string ni como entero forzado.</p>
 
     <h3>Formato de errores</h3>
-    <pre class="code">{ "estado": "ERROR", "codigo": "CODIGO_TECNICO", "mensaje": "DescripciÃ³n clara del error." }</pre>
-    <p>Todas las respuestas de error usan el schema <code>ErrorResponse</code>. Ver el <a href="#errores">catÃ¡logo de errores</a>.</p>
+    <pre class="code">{ "estado": "ERROR", "codigo": "CODIGO_TECNICO", "mensaje": "Descripción clara del error." }</pre>
+    <p>Todas las respuestas de error usan el schema <code>ErrorResponse</code>. Ver el <a href="#errores">catálogo de errores</a>.</p>
   </section>
 
   <!-- ============================================================ -->
@@ -151,15 +151,15 @@
     <h2>Tipos de datos reutilizados</h2>
     <table>
       <tr><th>Tipo</th><th>JSON</th><th>Restricciones</th><th>Ejemplo</th></tr>
-      <tr><td><code>Cantidad</code></td><td>number</td><td><code>minimum: 0</code> Â· <code>multipleOf: 0.001</code></td><td><code>10</code>, <code>7.5</code></td></tr>
-      <tr><td><code>CantidadPositiva</code></td><td>number</td><td><code>exclusiveMinimum: 0</code> Â· <code>multipleOf: 0.001</code></td><td><code>2</code>, <code>2.5</code></td></tr>
-      <tr><td><code>Precio</code></td><td>number</td><td><code>minimum: 0</code> Â· <code>multipleOf: 0.01</code></td><td><code>15000</code></td></tr>
-      <tr><td><code>Impuesto</code></td><td>number</td><td><code>minimum: 0</code> Â· <code>maximum: 100</code> Â· <code>multipleOf: 0.01</code></td><td><code>10.1</code></td></tr>
-      <tr><td><code>DocumentoRef</code></td><td>string</td><td>patrÃ³n <code>^[A-Z]{2,3}-\d{3}-\d{6}$</code></td><td><code>FV-001-000123</code></td></tr>
-      <tr><td><code>Comprobante</code></td><td>string</td><td>patrÃ³n <code>^STK-\d{3}-\d{6}-\d$</code> (con dÃ­gito verificador)</td><td><code>STK-001-000001-6</code></td></tr>
-      <tr><td><code>unidad_medida</code></td><td>string (enum)</td><td><code>UNIDAD</code> Â· <code>CAJA</code> Â· <code>KG</code> Â· <code>LITRO</code> Â· <code>METRO</code></td><td><code>UNIDAD</code></td></tr>
-      <tr><td><code>tipo_movimiento</code></td><td>string (enum)</td><td><code>COMPRA</code> Â· <code>RESERVA</code> Â· <code>VENTA</code> Â· <code>LIBERACION_RESERVA</code> Â· <code>AJUSTE</code></td><td><code>VENTA</code></td></tr>
-      <tr><td><code>origen</code></td><td>string (enum)</td><td><code>COMPRAS</code> Â· <code>VENTAS</code> Â· <code>STOCK</code> Â· <code>SISTEMA</code></td><td><code>VENTAS</code></td></tr>
+      <tr><td><code>Cantidad</code></td><td>number</td><td><code>minimum: 0</code> · <code>multipleOf: 0.001</code></td><td><code>10</code>, <code>7.5</code></td></tr>
+      <tr><td><code>CantidadPositiva</code></td><td>number</td><td><code>exclusiveMinimum: 0</code> · <code>multipleOf: 0.001</code></td><td><code>2</code>, <code>2.5</code></td></tr>
+      <tr><td><code>Precio</code></td><td>number</td><td><code>minimum: 0</code> · <code>multipleOf: 0.01</code></td><td><code>15000</code></td></tr>
+      <tr><td><code>Impuesto</code></td><td>number</td><td><code>minimum: 0</code> · <code>maximum: 100</code> · <code>multipleOf: 0.01</code></td><td><code>10.1</code></td></tr>
+      <tr><td><code>DocumentoRef</code></td><td>string</td><td>patrón <code>^[A-Z]{2,3}-\d{3}-\d{6}$</code></td><td><code>FV-001-000123</code></td></tr>
+      <tr><td><code>Comprobante</code></td><td>string</td><td>patrón <code>^STK-\d{3}-\d{6}-\d$</code> (con dígito verificador)</td><td><code>STK-001-000001-6</code></td></tr>
+      <tr><td><code>unidad_medida</code></td><td>string (enum)</td><td><code>UNIDAD</code> · <code>CAJA</code> · <code>KG</code> · <code>LITRO</code> · <code>METRO</code></td><td><code>UNIDAD</code></td></tr>
+      <tr><td><code>tipo_movimiento</code></td><td>string (enum)</td><td><code>COMPRA</code> · <code>RESERVA</code> · <code>VENTA</code> · <code>LIBERACION_RESERVA</code> · <code>AJUSTE</code></td><td><code>VENTA</code></td></tr>
+      <tr><td><code>origen</code></td><td>string (enum)</td><td><code>COMPRAS</code> · <code>VENTAS</code> · <code>STOCK</code> · <code>SISTEMA</code></td><td><code>VENTAS</code></td></tr>
       <tr><td>Identificadores (<code>producto_id</code>, <code>reserva_id</code>, ...)</td><td>integer</td><td><code>minimum: 1</code></td><td><code>1</code></td></tr>
     </table>
   </section>
@@ -171,19 +171,19 @@
       <span class="method post">POST</span><span class="path">/productos</span>
       <span class="opid">operationId: crearProducto</span>
     </div>
-    <div class="sig">crear_producto(payload: ProductoCreate) -> ProductoCreated &nbsp;Â·&nbsp; servicio: inventory.crear_producto</div>
-    <p>Registra un producto activo en el catÃ¡logo e inicializa automÃ¡ticamente su stock en cero.
+    <div class="sig">crear_producto(payload: ProductoCreate) -> ProductoCreated &nbsp;·&nbsp; servicio: inventory.crear_producto</div>
+    <p>Registra un producto activo en el catálogo e inicializa automáticamente su stock en cero.
        Es el <b>prerrequisito</b> de cualquier compra o reserva.</p>
 
-    <h3>Request Â· ProductoCreate</h3>
+    <h3>Request · ProductoCreate</h3>
     <table>
       <tr><th>Campo</th><th>Tipo</th><th>Oblig.</th><th>Restricciones</th><th>Ejemplo</th></tr>
-      <tr><td><code>codigo</code></td><td>string</td><td class="req">SÃ­</td><td>1â€“50 caracteres, Ãºnico</td><td><code>"P001"</code></td></tr>
-      <tr><td><code>nombre</code></td><td>string</td><td class="req">SÃ­</td><td>1â€“150 caracteres</td><td><code>"Producto A"</code></td></tr>
-      <tr><td><code>descripcion</code></td><td>string | null</td><td class="opt">No</td><td>â€”</td><td><code>"Producto de ejemplo"</code></td></tr>
-      <tr><td><code>categoria</code></td><td>string | null</td><td class="opt">No</td><td>â€”</td><td><code>"General"</code></td></tr>
+      <tr><td><code>codigo</code></td><td>string</td><td class="req">Sí</td><td>1–50 caracteres, único</td><td><code>"P001"</code></td></tr>
+      <tr><td><code>nombre</code></td><td>string</td><td class="req">Sí</td><td>1–150 caracteres</td><td><code>"Producto A"</code></td></tr>
+      <tr><td><code>descripcion</code></td><td>string | null</td><td class="opt">No</td><td>—</td><td><code>"Producto de ejemplo"</code></td></tr>
+      <tr><td><code>categoria</code></td><td>string | null</td><td class="opt">No</td><td>—</td><td><code>"General"</code></td></tr>
       <tr><td><code>unidad_medida</code></td><td>string (enum)</td><td class="opt">No (default <code>UNIDAD</code>)</td><td>ver enum de unidades</td><td><code>"UNIDAD"</code></td></tr>
-      <tr><td><code>impuesto</code></td><td>Impuesto</td><td class="opt">No (default <code>0</code>)</td><td>0â€“100, 2 decimales</td><td><code>10.1</code></td></tr>
+      <tr><td><code>impuesto</code></td><td>Impuesto</td><td class="opt">No (default <code>0</code>)</td><td>0–100, 2 decimales</td><td><code>10.1</code></td></tr>
     </table>
 
     <div class="cols">
@@ -200,7 +200,7 @@
 }</pre>
       </div>
       <div>
-        <div class="example-title">Ejemplo response Â· 201 ProductoCreated</div>
+        <div class="example-title">Ejemplo response · 201 ProductoCreated</div>
 <pre class="code">{
   "producto_id": 1,
   "codigo": "P001",
@@ -211,8 +211,8 @@
 
     <h3>Respuestas</h3>
     <p>
-      <span class="status s2">201</span> Producto creado (con stock inicializado en 0) Â·
-      <span class="status s4">409</span> <code>PRODUCTO_CODIGO_DUPLICADO</code> Â·
+      <span class="status s2">201</span> Producto creado (con stock inicializado en 0) ·
+      <span class="status s4">409</span> <code>PRODUCTO_CODIGO_DUPLICADO</code> ·
       <span class="status s4">422</span> <code>VALIDACION_ERROR</code>
     </p>
   </section>
@@ -224,13 +224,13 @@
       <span class="method get">GET</span><span class="path">/productos</span>
       <span class="opid">operationId: listarProductos</span>
     </div>
-    <div class="sig">listar_productos(filtro?: str, activo?: bool) -> list[ProductoOut] &nbsp;Â·&nbsp; servicio: inventory.listar_productos</div>
+    <div class="sig">listar_productos(filtro?: str, activo?: bool) -> list[ProductoOut] &nbsp;·&nbsp; servicio: inventory.listar_productos</div>
 
-    <h3>ParÃ¡metros query</h3>
+    <h3>Parámetros query</h3>
     <table>
-      <tr><th>ParÃ¡metro</th><th>Tipo</th><th>Oblig.</th><th>DescripciÃ³n</th></tr>
-      <tr><td><code>filtro</code></td><td>string (1â€“50)</td><td class="opt">No</td><td>CÃ³digo exacto del producto, p. ej. <code>P001</code></td></tr>
-      <tr><td><code>activo</code></td><td>boolean</td><td class="opt">No</td><td><code>true</code> activos Â· <code>false</code> inactivos</td></tr>
+      <tr><th>Parámetro</th><th>Tipo</th><th>Oblig.</th><th>Descripción</th></tr>
+      <tr><td><code>filtro</code></td><td>string (1–50)</td><td class="opt">No</td><td>Código exacto del producto, p. ej. <code>P001</code></td></tr>
+      <tr><td><code>activo</code></td><td>boolean</td><td class="opt">No</td><td><code>true</code> activos · <code>false</code> inactivos</td></tr>
     </table>
 
     <div class="cols">
@@ -239,7 +239,7 @@
 <pre class="code"><span class="lbl">GET /productos?filtro=P001&activo=true</span></pre>
       </div>
       <div>
-        <div class="example-title">Ejemplo response Â· 200 list[ProductoOut]</div>
+        <div class="example-title">Ejemplo response · 200 list[ProductoOut]</div>
 <pre class="code">[
   {
     "producto_id": 1,
@@ -263,33 +263,33 @@
       <span class="method get">GET</span><span class="path">/productos/{producto_id}</span>
       <span class="opid">operationId: obtenerProducto</span>
     </div>
-    <div class="sig">obtener_producto(producto_id: int, include?: str, limite_movimientos?: int) -> ProductoConsultaOut &nbsp;Â·&nbsp; servicio: inventory.obtener_producto_con_include</div>
+    <div class="sig">obtener_producto(producto_id: int, include?: str, limite_movimientos?: int) -> ProductoConsultaOut &nbsp;·&nbsp; servicio: inventory.obtener_producto_con_include</div>
     <p>Devuelve una <b>respuesta agrupada</b> con los bloques solicitados en <code>include</code>.
        Es una comodidad para consumidores: <b>no reemplaza</b> a <code>GET /stock/{producto_id}</code> ni a <code>GET /stock/movimientos</code>.</p>
 
-    <h3>ParÃ¡metros</h3>
+    <h3>Parámetros</h3>
     <table>
-      <tr><th>ParÃ¡metro</th><th>Tipo</th><th>Oblig.</th><th>DescripciÃ³n</th></tr>
-      <tr><td><code>producto_id</code></td><td>integer â‰¥ 1 (path)</td><td class="req">SÃ­</td><td>Identificador del producto</td></tr>
+      <tr><th>Parámetro</th><th>Tipo</th><th>Oblig.</th><th>Descripción</th></tr>
+      <tr><td><code>producto_id</code></td><td>integer ≥ 1 (path)</td><td class="req">Sí</td><td>Identificador del producto</td></tr>
       <tr><td><code>include</code></td><td>string (query, <code>style: form</code>, <code>explode: false</code>)</td><td class="opt">No (default <code>producto</code>)</td>
-        <td>Bloques separados por coma: <code>producto</code> Â· <code>stock</code> Â· <code>precios</code> Â· <code>movimientos</code>.
-            El orden no afecta el resultado y los duplicados se ignoran. Valor no permitido â†’ <span class="status s4">422</span> <code>VALIDACION_ERROR</code>.</td></tr>
+        <td>Bloques separados por coma: <code>producto</code> · <code>stock</code> · <code>precios</code> · <code>movimientos</code>.
+            El orden no afecta el resultado y los duplicados se ignoran. Valor no permitido → <span class="status s4">422</span> <code>VALIDACION_ERROR</code>.</td></tr>
       <tr><td><code>limite_movimientos</code></td><td>integer (query)</td><td class="opt">No (default <code>10</code>)</td>
-        <td>1â€“50. Solo aplica si <code>include</code> contiene <code>movimientos</code> (mÃ¡s recientes primero, por <code>fecha_movimiento</code> desc.)</td></tr>
+        <td>1–50. Solo aplica si <code>include</code> contiene <code>movimientos</code> (más recientes primero, por <code>fecha_movimiento</code> desc.)</td></tr>
     </table>
 
-    <h3>Response Â· ProductoConsultaOut (los bloques no solicitados se omiten)</h3>
+    <h3>Response · ProductoConsultaOut (los bloques no solicitados se omiten)</h3>
     <table>
       <tr><th>Bloque</th><th>Tipo</th><th>Contenido</th></tr>
       <tr><td><code>producto</code></td><td>ProductoOut | omitido</td><td>Datos maestros: <code>producto_id, codigo, nombre, descripcion, categoria, unidad_medida, impuesto, activo</code></td></tr>
       <tr><td><code>stock</code></td><td>StockOut | omitido</td><td><code>producto_id, cantidad_total, cantidad_reservada, cantidad_disponible</code></td></tr>
-      <tr><td><code>precios</code></td><td>PrecioResumenOut | omitido</td><td><code>precio_compra, precio_venta</code> mÃ¡s recientes (null si no hay precio registrado)</td></tr>
-      <tr><td><code>movimientos</code></td><td>list[MovimientoOut] | omitido</td><td>Ãšltimos movimientos del producto (ver <a href="#movimientos">MovimientoOut</a>)</td></tr>
+      <tr><td><code>precios</code></td><td>PrecioResumenOut | omitido</td><td><code>precio_compra, precio_venta</code> más recientes (null si no hay precio registrado)</td></tr>
+      <tr><td><code>movimientos</code></td><td>list[MovimientoOut] | omitido</td><td>Últimos movimientos del producto (ver <a href="#movimientos">MovimientoOut</a>)</td></tr>
     </table>
 
     <div class="cols">
       <div>
-        <div class="example-title">Ejemplo 1 Â· include=producto,stock,precios</div>
+        <div class="example-title">Ejemplo 1 · include=producto,stock,precios</div>
 <pre class="code"><span class="lbl">GET /productos/1?include=producto,stock,precios</span>
 {
   "producto": {
@@ -315,7 +315,7 @@
 }</pre>
       </div>
       <div>
-        <div class="example-title">Ejemplo 2 Â· include=stock,movimientos</div>
+        <div class="example-title">Ejemplo 2 · include=stock,movimientos</div>
 <pre class="code"><span class="lbl">GET /productos/1?include=stock,movimientos&limite_movimientos=10</span>
 {
   "stock": {
@@ -336,7 +336,7 @@
       "cantidad": 2,
       "stock_anterior": 10,
       "stock_posterior": 8,
-      "observacion": "ConfirmaciÃ³n de venta desde reserva"
+      "observacion": "Confirmación de venta desde reserva"
     }
   ]
 }</pre>
@@ -344,20 +344,20 @@
     </div>
 
     <details>
-      <summary>MÃ¡s combinaciones vÃ¡lidas de include</summary>
-      <pre class="code">GET /productos/1                       â†’ { "producto": {...} }        (default)
-GET /productos/1?include=producto      â†’ { "producto": {...} }
-GET /productos/1?include=stock         â†’ { "stock": {...} }
-GET /productos/1?include=precios       â†’ { "precios": {...} }
-GET /productos/1?include=producto,stock,precios,movimientos  â†’ los 4 bloques
-GET /productos/1?include=producto,producto,stock â†’ duplicados se ignoran â†’ producto,stock
-GET /productos/1?include=otra_cosa     â†’ 422 VALIDACION_ERROR</pre>
+      <summary>Más combinaciones válidas de include</summary>
+      <pre class="code">GET /productos/1                       → { "producto": {...} }        (default)
+GET /productos/1?include=producto      → { "producto": {...} }
+GET /productos/1?include=stock         → { "stock": {...} }
+GET /productos/1?include=precios       → { "precios": {...} }
+GET /productos/1?include=producto,stock,precios,movimientos  → los 4 bloques
+GET /productos/1?include=producto,producto,stock → duplicados se ignoran → producto,stock
+GET /productos/1?include=otra_cosa     → 422 VALIDACION_ERROR</pre>
     </details>
 
     <h3>Respuestas</h3>
     <p>
-      <span class="status s2">200</span> Bloques solicitados Â·
-      <span class="status s4">404</span> <code>PRODUCTO_NO_EXISTE</code> / <code>STOCK_NO_INICIALIZADO</code> Â·
+      <span class="status s2">200</span> Bloques solicitados ·
+      <span class="status s4">404</span> <code>PRODUCTO_NO_EXISTE</code> / <code>STOCK_NO_INICIALIZADO</code> ·
       <span class="status s4">422</span> <code>VALIDACION_ERROR</code>
     </p>
   </section>
@@ -369,8 +369,8 @@ GET /productos/1?include=otra_cosa     â†’ 422 VALIDACION_ERROR</pre>
       <span class="method get">GET</span><span class="path">/stock/{producto_id}</span>
       <span class="opid">operationId: obtenerStock</span>
     </div>
-    <div class="sig">obtener_stock(producto_id: int) -> StockOut &nbsp;Â·&nbsp; servicio: inventory.obtener_stock</div>
-    <p>Consulta especÃ­fica de cantidades. Valida que el producto exista y que su stock estÃ© inicializado.</p>
+    <div class="sig">obtener_stock(producto_id: int) -> StockOut &nbsp;·&nbsp; servicio: inventory.obtener_stock</div>
+    <p>Consulta específica de cantidades. Valida que el producto exista y que su stock esté inicializado.</p>
 
     <div class="cols">
       <div>
@@ -378,7 +378,7 @@ GET /productos/1?include=otra_cosa     â†’ 422 VALIDACION_ERROR</pre>
 <pre class="code"><span class="lbl">GET /stock/1</span></pre>
       </div>
       <div>
-        <div class="example-title">Ejemplo response Â· 200 StockOut</div>
+        <div class="example-title">Ejemplo response · 200 StockOut</div>
 <pre class="code">{
   "producto_id": 1,
   "cantidad_total": 10,
@@ -388,7 +388,7 @@ GET /productos/1?include=otra_cosa     â†’ 422 VALIDACION_ERROR</pre>
       </div>
     </div>
     <p>
-      <span class="status s2">200</span> Â·
+      <span class="status s2">200</span> ·
       <span class="status s4">404</span> <code>PRODUCTO_NO_EXISTE</code> / <code>STOCK_NO_INICIALIZADO</code>
     </p>
   </section>
@@ -400,29 +400,29 @@ GET /productos/1?include=otra_cosa     â†’ 422 VALIDACION_ERROR</pre>
       <span class="method get">GET</span><span class="path">/stock/movimientos</span>
       <span class="opid">operationId: listarMovimientosStock</span>
     </div>
-    <div class="sig">listar_movimientos(producto_id?: int, documento_ref?: str, tipo_movimiento?: str) -> list[MovimientoOut] &nbsp;Â·&nbsp; servicio: inventory.listar_movimientos</div>
-    <p>Trazabilidad completa de compras, reservas, ventas, liberaciones y ajustes, ordenada de la mÃ¡s reciente a la mÃ¡s antigua.</p>
+    <div class="sig">listar_movimientos(producto_id?: int, documento_ref?: str, tipo_movimiento?: str) -> list[MovimientoOut] &nbsp;·&nbsp; servicio: inventory.listar_movimientos</div>
+    <p>Trazabilidad completa de compras, reservas, ventas, liberaciones y ajustes, ordenada de la más reciente a la más antigua.</p>
 
-    <h3>ParÃ¡metros query (todos opcionales)</h3>
+    <h3>Parámetros query (todos opcionales)</h3>
     <table>
-      <tr><th>ParÃ¡metro</th><th>Tipo</th><th>DescripciÃ³n</th></tr>
-      <tr><td><code>producto_id</code></td><td>integer â‰¥ 1</td><td>Filtra por producto</td></tr>
+      <tr><th>Parámetro</th><th>Tipo</th><th>Descripción</th></tr>
+      <tr><td><code>producto_id</code></td><td>integer ≥ 1</td><td>Filtra por producto</td></tr>
       <tr><td><code>documento_ref</code></td><td>string</td><td>Filtra por documento externo, p. ej. <code>FV-001-000123</code></td></tr>
-      <tr><td><code>tipo_movimiento</code></td><td>string (enum)</td><td><code>COMPRA</code> Â· <code>RESERVA</code> Â· <code>VENTA</code> Â· <code>LIBERACION_RESERVA</code> Â· <code>AJUSTE</code></td></tr>
+      <tr><td><code>tipo_movimiento</code></td><td>string (enum)</td><td><code>COMPRA</code> · <code>RESERVA</code> · <code>VENTA</code> · <code>LIBERACION_RESERVA</code> · <code>AJUSTE</code></td></tr>
     </table>
 
-    <h3>Response Â· MovimientoOut</h3>
+    <h3>Response · MovimientoOut</h3>
     <table>
-      <tr><th>Campo</th><th>Tipo</th><th>DescripciÃ³n</th></tr>
+      <tr><th>Campo</th><th>Tipo</th><th>Descripción</th></tr>
       <tr><td><code>movimiento_id</code></td><td>integer</td><td>Identificador del movimiento</td></tr>
       <tr><td><code>producto_id</code></td><td>integer</td><td>Producto afectado</td></tr>
       <tr><td><code>reserva_id</code></td><td>integer | null</td><td>Reserva asociada (si aplica)</td></tr>
-      <tr><td><code>tipo_movimiento</code></td><td>enum</td><td>Tipo de operaciÃ³n que generÃ³ el movimiento</td></tr>
-      <tr><td><code>origen</code></td><td>enum</td><td>MÃ³dulo que originÃ³ el movimiento</td></tr>
+      <tr><td><code>tipo_movimiento</code></td><td>enum</td><td>Tipo de operación que generó el movimiento</td></tr>
+      <tr><td><code>origen</code></td><td>enum</td><td>Módulo que originó el movimiento</td></tr>
       <tr><td><code>documento_ref</code></td><td>DocumentoRef | null</td><td>Documento externo (Ventas/Compras)</td></tr>
-      <tr><td><code>comprobante</code></td><td>Comprobante</td><td>Comprobante interno de Stock de la operaciÃ³n</td></tr>
+      <tr><td><code>comprobante</code></td><td>Comprobante</td><td>Comprobante interno de Stock de la operación</td></tr>
       <tr><td><code>cantidad</code></td><td>Cantidad</td><td>Cantidad movida</td></tr>
-      <tr><td><code>stock_anterior</code> / <code>stock_posterior</code></td><td>Cantidad</td><td>Saldo total antes / despuÃ©s</td></tr>
+      <tr><td><code>stock_anterior</code> / <code>stock_posterior</code></td><td>Cantidad</td><td>Saldo total antes / después</td></tr>
       <tr><td><code>observacion</code></td><td>string | null</td><td>Detalle funcional</td></tr>
     </table>
 
@@ -434,33 +434,33 @@ GET /productos/1?include=otra_cosa     â†’ 422 VALIDACION_ERROR</pre>
     "tipo_movimiento": "VENTA", "origen": "VENTAS",
     "documento_ref": "FV-001-000123", "comprobante": "STK-001-000001-6",
     "cantidad": 2, "stock_anterior": 10, "stock_posterior": 8,
-    "observacion": "ConfirmaciÃ³n de venta desde reserva"
+    "observacion": "Confirmación de venta desde reserva"
   }
 ]</pre>
   </section>
 
   <!-- ============================================================ -->
   <section id="compras">
-    <h2>Compras Â· Procesar evento de compra</h2>
+    <h2>Compras · Procesar evento de compra</h2>
     <div class="endpoint">
       <span class="method post">POST</span><span class="path">/compras/eventos</span>
       <span class="opid">operationId: procesarEventoCompra</span>
-      <span class="badge idem">IDEMPOTENTE Â· clave: mensaje_id</span>
+      <span class="badge idem">IDEMPOTENTE · clave: mensaje_id</span>
     </div>
-    <div class="sig">procesar_evento_compra(payload: CompraEventoIn) -> CompraEventoOut &nbsp;Â·&nbsp; servicio: inventory.procesar_compra</div>
+    <div class="sig">procesar_evento_compra(payload: CompraEventoIn) -> CompraEventoOut &nbsp;·&nbsp; servicio: inventory.procesar_compra</div>
     <p>Procesa un evento de compra (por HTTP o reenviado desde RabbitMQ), incrementa el stock del producto,
        registra el precio de compra y el movimiento <code>COMPRA</code>, y genera el <b>comprobante interno</b> de la entrada.
-       <b>Requiere que el producto exista y estÃ© activo.</b></p>
+       <b>Requiere que el producto exista y esté activo.</b></p>
 
-    <h3>Request Â· CompraEventoIn</h3>
+    <h3>Request · CompraEventoIn</h3>
     <table>
       <tr><th>Campo</th><th>Tipo</th><th>Oblig.</th><th>Restricciones</th><th>Ejemplo</th></tr>
-      <tr><td><code>mensaje_id</code></td><td>string</td><td class="req">SÃ­</td><td>1â€“100 caracteres Â· clave de idempotencia</td><td><code>"CMP-2026-0001"</code></td></tr>
-      <tr><td><code>referencia_compra</code></td><td>DocumentoRef</td><td class="req">SÃ­</td><td>documento externo de Compras</td><td><code>"OC-001-000555"</code></td></tr>
-      <tr><td><code>producto_id</code></td><td>integer â‰¥ 1</td><td class="req">SÃ­</td><td>producto existente y activo</td><td><code>1</code></td></tr>
-      <tr><td><code>cantidad</code></td><td>CantidadPositiva</td><td class="req">SÃ­</td><td>&gt; 0, hasta 3 decimales</td><td><code>10</code></td></tr>
-      <tr><td><code>precio_compra</code></td><td>Precio</td><td class="req">SÃ­</td><td>â‰¥ 0, hasta 2 decimales</td><td><code>9000</code></td></tr>
-      <tr><td><code>proveedor_ref</code></td><td>string | null</td><td class="opt">No</td><td>mÃ¡x. 80 caracteres</td><td><code>"PROV-001"</code></td></tr>
+      <tr><td><code>mensaje_id</code></td><td>string</td><td class="req">Sí</td><td>1–100 caracteres · clave de idempotencia</td><td><code>"CMP-2026-0001"</code></td></tr>
+      <tr><td><code>referencia_compra</code></td><td>DocumentoRef</td><td class="req">Sí</td><td>documento externo de Compras</td><td><code>"OC-001-000555"</code></td></tr>
+      <tr><td><code>producto_id</code></td><td>integer ≥ 1</td><td class="req">Sí</td><td>producto existente y activo</td><td><code>1</code></td></tr>
+      <tr><td><code>cantidad</code></td><td>CantidadPositiva</td><td class="req">Sí</td><td>&gt; 0, hasta 3 decimales</td><td><code>10</code></td></tr>
+      <tr><td><code>precio_compra</code></td><td>Precio</td><td class="req">Sí</td><td>≥ 0, hasta 2 decimales</td><td><code>9000</code></td></tr>
+      <tr><td><code>proveedor_ref</code></td><td>string | null</td><td class="opt">No</td><td>máx. 80 caracteres</td><td><code>"PROV-001"</code></td></tr>
     </table>
 
     <div class="cols">
@@ -477,7 +477,7 @@ GET /productos/1?include=otra_cosa     â†’ 422 VALIDACION_ERROR</pre>
 }</pre>
       </div>
       <div>
-        <div class="example-title">Ejemplo response Â· 200 CompraEventoOut</div>
+        <div class="example-title">Ejemplo response · 200 CompraEventoOut</div>
 <pre class="code">{
   "mensaje_id": "CMP-2026-0001",
   "estado_procesamiento": "PROCESADO",
@@ -495,10 +495,10 @@ GET /productos/1?include=otra_cosa     â†’ 422 VALIDACION_ERROR</pre>
 
     <h3>Respuestas</h3>
     <p>
-      <span class="status s2">200</span> PROCESADO / DUPLICADO Â·
-      <span class="status s4">400</span> <code>PRODUCTO_INACTIVO</code> Â·
-      <span class="status s4">404</span> <code>PRODUCTO_NO_EXISTE</code> / <code>STOCK_NO_INICIALIZADO</code> Â·
-      <span class="status s4">409</span> <code>REPLAY_NO_COINCIDE</code> Â·
+      <span class="status s2">200</span> PROCESADO / DUPLICADO ·
+      <span class="status s4">400</span> <code>PRODUCTO_INACTIVO</code> ·
+      <span class="status s4">404</span> <code>PRODUCTO_NO_EXISTE</code> / <code>STOCK_NO_INICIALIZADO</code> ·
+      <span class="status s4">409</span> <code>REPLAY_NO_COINCIDE</code> ·
       <span class="status s4">422</span> <code>VALIDACION_ERROR</code>
     </p>
 
@@ -507,24 +507,24 @@ GET /productos/1?include=otra_cosa     â†’ 422 VALIDACION_ERROR</pre>
 %%{init: {"theme": "base", "flowchart": {"htmlLabels": true, "curve": "basis"}, "themeVariables": {"fontFamily": "Inter, Segoe UI, Arial", "background": "#FFFFFF", "mainBkg": "#F8FAFC", "primaryTextColor": "#0F172A", "primaryBorderColor": "#334155", "lineColor": "#64748B", "clusterBkg": "#F8FAFC", "clusterBorder": "#CBD5E1", "edgeLabelBackground": "#FFFFFF"}} }%%
 flowchart LR
     inicio([Evento de compra recibido]):::start
-    entrada["<b>Payload CompraEventoIn</b><br/>mensaje_id Â· referencia_compra<br/>producto_id Â· cantidad Â· precio_compra"]:::io
+    entrada["<b>Payload CompraEventoIn</b><br/>mensaje_id · referencia_compra<br/>producto_id · cantidad · precio_compra"]:::io
     subgraph PREV["1. Validaciones previas"]
         direction TB
-        vIdem{"Â¿mensaje_id<br/>ya PROCESADO?"}:::val
-        vProd{"Â¿Producto existe<br/>y estÃ¡ activo?"}:::val
-        vStock{"Â¿Stock inicializado?<br/><small>SELECT ... FOR UPDATE</small>"}:::val
+        vIdem{"¿mensaje_id<br/>ya PROCESADO?"}:::val
+        vProd{"¿Producto existe<br/>y está activo?"}:::val
+        vStock{"¿Stock inicializado?<br/><small>SELECT ... FOR UPDATE</small>"}:::val
     end
     subgraph PROC["2. Proceso transaccional"]
         direction TB
         genComp["Generar comprobante interno<br/><b>STK-001-000001-6</b>"]:::proc
         sumar["Actualizar stock<br/><small>stock_anterior = cantidad_total<br/>cantidad_total += cantidad</small>"]:::proc
-        persistir["Persistir registros<br/><small>COLA_COMPRAS_LOG Â· PRECIO_COMPRA<br/>MOVIMIENTO_STOCK: COMPRA</small>"]:::proc
-        commit["Confirmar transacciÃ³n<br/><b>COMMIT</b>"]:::procStrong
+        persistir["Persistir registros<br/><small>COLA_COMPRAS_LOG · PRECIO_COMPRA<br/>MOVIMIENTO_STOCK: COMPRA</small>"]:::proc
+        commit["Confirmar transacción<br/><b>COMMIT</b>"]:::procStrong
     end
     subgraph POST["3. Resultado"]
         direction TB
-        vCommit{"Â¿COMMIT<br/>sin IntegrityError?"}:::val
-        salida["<b>CompraEventoOut</b><br/>estado_procesamiento Â· documento_ref<br/>comprobante Â· stock_total_actual"]:::io
+        vCommit{"¿COMMIT<br/>sin IntegrityError?"}:::val
+        salida["<b>CompraEventoOut</b><br/>estado_procesamiento · documento_ref<br/>comprobante · stock_total_actual"]:::io
     end
     dup["Resultado idempotente<br/><b>DUPLICADO</b><br/><small>devuelve comprobante existente</small>"]:::warn
     e404p["404<br/><b>PRODUCTO_NO_EXISTE</b>"]:::err
@@ -532,7 +532,7 @@ flowchart LR
     e404s["404<br/><b>STOCK_NO_INICIALIZADO</b>"]:::err
     fin([200 OK]):::endOk
     inicio --> entrada --> vIdem
-    vIdem -- "SÃ­" --> dup
+    vIdem -- "Sí" --> dup
     vIdem -- "No" --> vProd
     vProd -- "No existe" --> e404p
     vProd -- "Inactivo" --> e400
@@ -557,25 +557,25 @@ flowchart LR
 
   <!-- ============================================================ -->
   <section id="reservas">
-    <h2>Reservas Â· Crear reserva de stock</h2>
+    <h2>Reservas · Crear reserva de stock</h2>
     <div class="endpoint">
       <span class="method post">POST</span><span class="path">/stock/reservas</span>
       <span class="opid">operationId: crearReserva</span>
-      <span class="badge idem">IDEMPOTENTE Â· clave: documento_ref</span>
+      <span class="badge idem">IDEMPOTENTE · clave: documento_ref</span>
     </div>
-    <div class="sig">crear_reserva(payload: ReservaCreate) -> ReservaCreateOut &nbsp;Â·&nbsp; servicio: inventory.crear_reservas</div>
-    <p>Reserva stock para uno o mÃ¡s productos. Es el <b>paso previo obligatorio a la venta</b>:
+    <div class="sig">crear_reserva(payload: ReservaCreate) -> ReservaCreateOut &nbsp;·&nbsp; servicio: inventory.crear_reservas</div>
+    <p>Reserva stock para uno o más productos. Es el <b>paso previo obligatorio a la venta</b>:
        incrementa <code>cantidad_reservada</code> (sin descontar el total), crea reservas en estado <code>PENDIENTE</code>
-       y registra movimientos <code>RESERVA</code>. Genera <b>un comprobante interno</b> por operaciÃ³n,
-       compartido por todos los Ã­tems.</p>
+       y registra movimientos <code>RESERVA</code>. Genera <b>un comprobante interno</b> por operación,
+       compartido por todos los ítems.</p>
 
-    <h3>Request Â· ReservaCreate</h3>
+    <h3>Request · ReservaCreate</h3>
     <table>
       <tr><th>Campo</th><th>Tipo</th><th>Oblig.</th><th>Restricciones</th><th>Ejemplo</th></tr>
-      <tr><td><code>documento_ref</code></td><td>DocumentoRef</td><td class="req">SÃ­</td><td>documento externo de Ventas</td><td><code>"FV-001-000123"</code></td></tr>
-      <tr><td><code>items</code></td><td>list[ReservaItemIn]</td><td class="req">SÃ­</td><td>mÃ­nimo 1 Ã­tem</td><td>â€”</td></tr>
-      <tr><td><code>items[].producto_id</code></td><td>integer â‰¥ 1</td><td class="req">SÃ­</td><td>producto existente y activo</td><td><code>1</code></td></tr>
-      <tr><td><code>items[].cantidad</code></td><td>CantidadPositiva</td><td class="req">SÃ­</td><td>&gt; 0 y â‰¤ disponible</td><td><code>2</code></td></tr>
+      <tr><td><code>documento_ref</code></td><td>DocumentoRef</td><td class="req">Sí</td><td>documento externo de Ventas</td><td><code>"FV-001-000123"</code></td></tr>
+      <tr><td><code>items</code></td><td>list[ReservaItemIn]</td><td class="req">Sí</td><td>mínimo 1 ítem</td><td>—</td></tr>
+      <tr><td><code>items[].producto_id</code></td><td>integer ≥ 1</td><td class="req">Sí</td><td>producto existente y activo</td><td><code>1</code></td></tr>
+      <tr><td><code>items[].cantidad</code></td><td>CantidadPositiva</td><td class="req">Sí</td><td>&gt; 0 y ≤ disponible</td><td><code>2</code></td></tr>
     </table>
 
     <div class="cols">
@@ -590,7 +590,7 @@ flowchart LR
 }</pre>
       </div>
       <div>
-        <div class="example-title">Ejemplo response Â· 201 ReservaCreateOut</div>
+        <div class="example-title">Ejemplo response · 201 ReservaCreateOut</div>
 <pre class="code">{
   "estado": "RESERVADO",
   "documento_ref": "FV-001-000123",
@@ -612,32 +612,32 @@ flowchart LR
 
     <h3>Respuestas</h3>
     <p>
-      <span class="status s2">201</span> RESERVADO Â·
-      <span class="status s4">400</span> <code>PRODUCTO_INACTIVO</code> Â·
-      <span class="status s4">404</span> <code>PRODUCTO_NO_EXISTE</code> / <code>STOCK_NO_INICIALIZADO</code> Â·
-      <span class="status s4">409</span> <code>STOCK_INSUFICIENTE</code> / <code>DOCUMENTO_YA_TIENE_RESERVA</code> / <code>REPLAY_NO_COINCIDE</code> / <code>CONFLICTO_CONCURRENCIA</code> Â·
+      <span class="status s2">201</span> RESERVADO ·
+      <span class="status s4">400</span> <code>PRODUCTO_INACTIVO</code> ·
+      <span class="status s4">404</span> <code>PRODUCTO_NO_EXISTE</code> / <code>STOCK_NO_INICIALIZADO</code> ·
+      <span class="status s4">409</span> <code>STOCK_INSUFICIENTE</code> / <code>DOCUMENTO_YA_TIENE_RESERVA</code> / <code>REPLAY_NO_COINCIDE</code> / <code>CONFLICTO_CONCURRENCIA</code> ·
       <span class="status s4">422</span> <code>VALIDACION_ERROR</code>
     </p>
   </section>
 
   <!-- ============================================================ -->
   <section id="confirmar-reserva">
-    <h2>Reservas Â· Confirmar reserva puntual</h2>
+    <h2>Reservas · Confirmar reserva puntual</h2>
     <div class="endpoint">
       <span class="method post">POST</span><span class="path">/stock/reservas/{reserva_id}/confirmar</span>
       <span class="opid">operationId: confirmarReserva</span>
       <span class="badge internal">x-internal</span>
-      <span class="badge idem">IDEMPOTENTE Â· clave: reserva_id</span>
+      <span class="badge idem">IDEMPOTENTE · clave: reserva_id</span>
     </div>
-    <div class="sig">confirmar_reserva(reserva_id: int, payload: ConfirmarReservaIn) -> ConfirmarReservaOut &nbsp;Â·&nbsp; servicio: inventory.confirmar_reserva</div>
+    <div class="sig">confirmar_reserva(reserva_id: int, payload: ConfirmarReservaIn) -> ConfirmarReservaOut &nbsp;·&nbsp; servicio: inventory.confirmar_reserva</div>
     <p>Concreta la venta de <b>una</b> reserva <code>PENDIENTE</code>: descuenta <code>cantidad_total</code> y
        <code>cantidad_reservada</code>, registra el movimiento <code>VENTA</code> (y opcionalmente el precio de venta)
-       y genera el comprobante interno de la confirmaciÃ³n. <i>OperaciÃ³n de uso interno del ecosistema SDI.</i></p>
+       y genera el comprobante interno de la confirmación. <i>Operación de uso interno del ecosistema SDI.</i></p>
 
-    <h3>Request Â· ConfirmarReservaIn</h3>
+    <h3>Request · ConfirmarReservaIn</h3>
     <table>
-      <tr><th>Campo</th><th>Tipo</th><th>Oblig.</th><th>DescripciÃ³n</th></tr>
-      <tr><td><code>reserva_id</code></td><td>integer â‰¥ 1 (path)</td><td class="req">SÃ­</td><td>Reserva a confirmar (debe estar PENDIENTE)</td></tr>
+      <tr><th>Campo</th><th>Tipo</th><th>Oblig.</th><th>Descripción</th></tr>
+      <tr><td><code>reserva_id</code></td><td>integer ≥ 1 (path)</td><td class="req">Sí</td><td>Reserva a confirmar (debe estar PENDIENTE)</td></tr>
       <tr><td><code>documento_ref</code></td><td>DocumentoRef | null</td><td class="opt">No</td><td>Documento externo; si se omite se usa el de la reserva</td></tr>
       <tr><td><code>precio_venta</code></td><td>Precio | null</td><td class="opt">No</td><td>Si se informa, se registra como precio de venta vigente</td></tr>
     </table>
@@ -652,7 +652,7 @@ flowchart LR
 }</pre>
       </div>
       <div>
-        <div class="example-title">Ejemplo response Â· 200 ConfirmarReservaOut</div>
+        <div class="example-title">Ejemplo response · 200 ConfirmarReservaOut</div>
 <pre class="code">{
   "estado": "CONFIRMADA",
   "reserva_id": 101,
@@ -669,32 +669,32 @@ flowchart LR
 
     <h3>Respuestas</h3>
     <p>
-      <span class="status s2">200</span> CONFIRMADA Â·
-      <span class="status s4">404</span> <code>RESERVA_NO_EXISTE</code> Â·
-      <span class="status s4">409</span> <code>RESERVA_NO_PENDIENTE</code> / <code>OPERACION_YA_PROCESADA</code> / <code>RESERVA_YA_LIBERADA</code> / <code>CONFLICTO_CONCURRENCIA</code> Â·
+      <span class="status s2">200</span> CONFIRMADA ·
+      <span class="status s4">404</span> <code>RESERVA_NO_EXISTE</code> ·
+      <span class="status s4">409</span> <code>RESERVA_NO_PENDIENTE</code> / <code>OPERACION_YA_PROCESADA</code> / <code>RESERVA_YA_LIBERADA</code> / <code>CONFLICTO_CONCURRENCIA</code> ·
       <span class="status s4">422</span> <code>VALIDACION_ERROR</code>
     </p>
   </section>
 
   <!-- ============================================================ -->
   <section id="liberar-reserva">
-    <h2>Reservas Â· Liberar reserva</h2>
+    <h2>Reservas · Liberar reserva</h2>
     <div class="endpoint">
       <span class="method post">POST</span><span class="path">/stock/reservas/{reserva_id}/liberar</span>
       <span class="opid">operationId: liberarReserva</span>
       <span class="badge internal">x-internal</span>
-      <span class="badge idem">IDEMPOTENTE Â· clave: reserva_id</span>
+      <span class="badge idem">IDEMPOTENTE · clave: reserva_id</span>
     </div>
-    <div class="sig">liberar_reserva(reserva_id: int, payload: LiberarReservaIn) -> LiberarReservaOut &nbsp;Â·&nbsp; servicio: inventory.liberar_reserva</div>
+    <div class="sig">liberar_reserva(reserva_id: int, payload: LiberarReservaIn) -> LiberarReservaOut &nbsp;·&nbsp; servicio: inventory.liberar_reserva</div>
     <p>Cancela una reserva <code>PENDIENTE</code> cuando la venta no se concreta: devuelve la disponibilidad
        (reduce <code>cantidad_reservada</code>), registra el movimiento <code>LIBERACION_RESERVA</code> y genera
-       el comprobante interno de la liberaciÃ³n. <i>OperaciÃ³n de uso interno del ecosistema SDI.</i></p>
+       el comprobante interno de la liberación. <i>Operación de uso interno del ecosistema SDI.</i></p>
 
-    <h3>Request Â· LiberarReservaIn</h3>
+    <h3>Request · LiberarReservaIn</h3>
     <table>
       <tr><th>Campo</th><th>Tipo</th><th>Oblig.</th><th>Restricciones</th><th>Ejemplo</th></tr>
-      <tr><td><code>reserva_id</code></td><td>integer â‰¥ 1 (path)</td><td class="req">SÃ­</td><td>Reserva PENDIENTE</td><td><code>101</code></td></tr>
-      <tr><td><code>motivo_liberacion</code></td><td>string</td><td class="req">SÃ­</td><td>1â€“200 caracteres</td><td><code>"CancelaciÃ³n de venta"</code></td></tr>
+      <tr><td><code>reserva_id</code></td><td>integer ≥ 1 (path)</td><td class="req">Sí</td><td>Reserva PENDIENTE</td><td><code>101</code></td></tr>
+      <tr><td><code>motivo_liberacion</code></td><td>string</td><td class="req">Sí</td><td>1–200 caracteres</td><td><code>"Cancelación de venta"</code></td></tr>
     </table>
 
     <div class="cols">
@@ -702,11 +702,11 @@ flowchart LR
         <div class="example-title">Ejemplo request</div>
 <pre class="code"><span class="lbl">POST /stock/reservas/101/liberar</span>
 {
-  "motivo_liberacion": "CancelaciÃ³n de venta"
+  "motivo_liberacion": "Cancelación de venta"
 }</pre>
       </div>
       <div>
-        <div class="example-title">Ejemplo response Â· 200 LiberarReservaOut</div>
+        <div class="example-title">Ejemplo response · 200 LiberarReservaOut</div>
 <pre class="code">{
   "estado": "LIBERADA",
   "reserva_id": 101,
@@ -718,36 +718,36 @@ flowchart LR
 
     <h3>Respuestas</h3>
     <p>
-      <span class="status s2">200</span> LIBERADA Â·
-      <span class="status s4">404</span> <code>RESERVA_NO_EXISTE</code> Â·
-      <span class="status s4">409</span> <code>RESERVA_NO_PENDIENTE</code> / <code>OPERACION_YA_PROCESADA</code> / <code>RESERVA_YA_CONFIRMADA</code> / <code>CONFLICTO_CONCURRENCIA</code> Â·
+      <span class="status s2">200</span> LIBERADA ·
+      <span class="status s4">404</span> <code>RESERVA_NO_EXISTE</code> ·
+      <span class="status s4">409</span> <code>RESERVA_NO_PENDIENTE</code> / <code>OPERACION_YA_PROCESADA</code> / <code>RESERVA_YA_CONFIRMADA</code> / <code>CONFLICTO_CONCURRENCIA</code> ·
       <span class="status s4">422</span> <code>VALIDACION_ERROR</code>
     </p>
   </section>
 
   <!-- ============================================================ -->
   <section id="ventas">
-    <h2>Ventas Â· Confirmar venta completa</h2>
+    <h2>Ventas · Confirmar venta completa</h2>
     <div class="endpoint">
       <span class="method post">POST</span><span class="path">/ventas/confirmar</span>
       <span class="opid">operationId: confirmarVenta</span>
-      <span class="badge idem">IDEMPOTENTE Â· clave: documento_ref</span>
+      <span class="badge idem">IDEMPOTENTE · clave: documento_ref</span>
     </div>
-    <div class="sig">confirmar_venta(payload: VentaConfirmarIn) -> VentaConfirmarOut &nbsp;Â·&nbsp; servicio: inventory.confirmar_venta</div>
-    <p>Confirma una venta con mÃºltiples Ã­tems usando las <b>reservas PENDIENTES del mismo <code>documento_ref</code></b>.
-       Cada Ã­tem debe coincidir en producto y cantidad con su reserva. Descuenta el stock en una Ãºnica transacciÃ³n,
-       registra movimientos <code>VENTA</code> y precios de venta, y genera <b>un comprobante interno</b> para toda la operaciÃ³n.</p>
+    <div class="sig">confirmar_venta(payload: VentaConfirmarIn) -> VentaConfirmarOut &nbsp;·&nbsp; servicio: inventory.confirmar_venta</div>
+    <p>Confirma una venta con múltiples ítems usando las <b>reservas PENDIENTES del mismo <code>documento_ref</code></b>.
+       Cada ítem debe coincidir en producto y cantidad con su reserva. Descuenta el stock en una única transacción,
+       registra movimientos <code>VENTA</code> y precios de venta, y genera <b>un comprobante interno</b> para toda la operación.</p>
     <div class="warn-box"><b>Prerrequisito:</b> el documento debe tener reservas pendientes creadas con
       <code>POST /stock/reservas</code>. Sin reserva previa la venta se rechaza con <code>RESERVA_NO_COINCIDE</code>.</div>
 
-    <h3>Request Â· VentaConfirmarIn</h3>
+    <h3>Request · VentaConfirmarIn</h3>
     <table>
       <tr><th>Campo</th><th>Tipo</th><th>Oblig.</th><th>Restricciones</th><th>Ejemplo</th></tr>
-      <tr><td><code>documento_ref</code></td><td>DocumentoRef</td><td class="req">SÃ­</td><td>mismo documento usado al reservar</td><td><code>"FV-001-000123"</code></td></tr>
-      <tr><td><code>items</code></td><td>list[VentaItemIn]</td><td class="req">SÃ­</td><td>mÃ­nimo 1 Ã­tem</td><td>â€”</td></tr>
-      <tr><td><code>items[].producto_id</code></td><td>integer â‰¥ 1</td><td class="req">SÃ­</td><td>con reserva pendiente del documento</td><td><code>1</code></td></tr>
-      <tr><td><code>items[].cantidad</code></td><td>CantidadPositiva</td><td class="req">SÃ­</td><td>igual a la cantidad reservada</td><td><code>2</code></td></tr>
-      <tr><td><code>items[].precio_venta</code></td><td>Precio</td><td class="req">SÃ­</td><td>â‰¥ 0, hasta 2 decimales</td><td><code>15000</code></td></tr>
+      <tr><td><code>documento_ref</code></td><td>DocumentoRef</td><td class="req">Sí</td><td>mismo documento usado al reservar</td><td><code>"FV-001-000123"</code></td></tr>
+      <tr><td><code>items</code></td><td>list[VentaItemIn]</td><td class="req">Sí</td><td>mínimo 1 ítem</td><td>—</td></tr>
+      <tr><td><code>items[].producto_id</code></td><td>integer ≥ 1</td><td class="req">Sí</td><td>con reserva pendiente del documento</td><td><code>1</code></td></tr>
+      <tr><td><code>items[].cantidad</code></td><td>CantidadPositiva</td><td class="req">Sí</td><td>igual a la cantidad reservada</td><td><code>2</code></td></tr>
+      <tr><td><code>items[].precio_venta</code></td><td>Precio</td><td class="req">Sí</td><td>≥ 0, hasta 2 decimales</td><td><code>15000</code></td></tr>
     </table>
 
     <div class="cols">
@@ -762,7 +762,7 @@ flowchart LR
 }</pre>
       </div>
       <div>
-        <div class="example-title">Ejemplo response Â· 200 VentaConfirmarOut</div>
+        <div class="example-title">Ejemplo response · 200 VentaConfirmarOut</div>
 <pre class="code">{
   "estado": "CONFIRMADA",
   "documento_ref": "FV-001-000123",
@@ -773,9 +773,9 @@ flowchart LR
 
     <h3>Respuestas</h3>
     <p>
-      <span class="status s2">200</span> CONFIRMADA Â·
-      <span class="status s4">404</span> <code>PRODUCTO_NO_EXISTE</code> / <code>STOCK_NO_INICIALIZADO</code> Â·
-      <span class="status s4">409</span> <code>RESERVA_NO_COINCIDE</code> / <code>DOCUMENTO_YA_PROCESADO</code> / <code>REPLAY_NO_COINCIDE</code> / <code>CONFLICTO_CONCURRENCIA</code> Â·
+      <span class="status s2">200</span> CONFIRMADA ·
+      <span class="status s4">404</span> <code>PRODUCTO_NO_EXISTE</code> / <code>STOCK_NO_INICIALIZADO</code> ·
+      <span class="status s4">409</span> <code>RESERVA_NO_COINCIDE</code> / <code>DOCUMENTO_YA_PROCESADO</code> / <code>REPLAY_NO_COINCIDE</code> / <code>CONFLICTO_CONCURRENCIA</code> ·
       <span class="status s4">422</span> <code>VALIDACION_ERROR</code>
     </p>
 
@@ -784,39 +784,39 @@ flowchart LR
 %%{init: {"theme": "base", "flowchart": {"htmlLabels": true, "curve": "basis"}, "themeVariables": {"fontFamily": "Inter, Segoe UI, Arial", "background": "#FFFFFF", "mainBkg": "#F8FAFC", "primaryTextColor": "#0F172A", "primaryBorderColor": "#334155", "lineColor": "#64748B", "clusterBkg": "#F8FAFC", "clusterBorder": "#CBD5E1", "edgeLabelBackground": "#FFFFFF"}} }%%
 flowchart LR
     inicio([Solicitud de venta]):::start
-    subgraph RESERVA["1. Reserva de stock Â· POST /stock/reservas"]
+    subgraph RESERVA["1. Reserva de stock · POST /stock/reservas"]
         direction TB
-        rEntrada["<b>ReservaCreate</b><br/>documento_ref Â· items[]"]:::io
-        rvProd{"Â¿Producto existe<br/>y estÃ¡ activo?"}:::val
-        rvStock{"Â¿Stock inicializado?<br/><small>bloqueo de fila</small>"}:::val
-        rvDisp{"Â¿Disponible<br/>mayor o igual a cantidad?"}:::val
+        rEntrada["<b>ReservaCreate</b><br/>documento_ref · items[]"]:::io
+        rvProd{"¿Producto existe<br/>y está activo?"}:::val
+        rvStock{"¿Stock inicializado?<br/><small>bloqueo de fila</small>"}:::val
+        rvDisp{"¿Disponible<br/>mayor o igual a cantidad?"}:::val
         rGen["Generar comprobante interno"]:::proc
         rProc["Crear reserva PENDIENTE<br/><small>cantidad_reservada += cantidad<br/>MovimientoStock: RESERVA</small>"]:::proc
         rCommit["COMMIT"]:::procStrong
-        rSalida["<b>ReservaCreateOut</b><br/>RESERVADO Â· comprobante Â· reservas[]"]:::io
+        rSalida["<b>ReservaCreateOut</b><br/>RESERVADO · comprobante · reservas[]"]:::io
     end
-    decision{"Â¿La venta<br/>se concreta?"}:::decision
-    subgraph CONFR["2A. Confirmar reserva puntual Â· POST /stock/reservas/{id}/confirmar"]
+    decision{"¿La venta<br/>se concreta?"}:::decision
+    subgraph CONFR["2A. Confirmar reserva puntual · POST /stock/reservas/{id}/confirmar"]
         direction TB
-        cvPend{"Â¿Reserva existe<br/>y estÃ¡ PENDIENTE?"}:::val
+        cvPend{"¿Reserva existe<br/>y está PENDIENTE?"}:::val
         cGen["Generar comprobante interno"]:::proc
         cProc["Confirmar reserva<br/><small>cantidad_total -= reservada<br/>cantidad_reservada -= reservada<br/>MovimientoStock: VENTA</small>"]:::proc
-        cSalida["<b>ConfirmarReservaOut</b><br/>CONFIRMADA Â· saldos actuales"]:::io
+        cSalida["<b>ConfirmarReservaOut</b><br/>CONFIRMADA · saldos actuales"]:::io
     end
-    subgraph CONFV["2B. Confirmar venta completa Â· POST /ventas/confirmar"]
+    subgraph CONFV["2B. Confirmar venta completa · POST /ventas/confirmar"]
         direction TB
-        vBusca["Buscar reservas PENDIENTE<br/><small>por documento_ref Â· FOR UPDATE</small>"]:::proc
-        vvMatch{"Â¿Cada Ã­tem coincide<br/>con su reserva?"}:::val
+        vBusca["Buscar reservas PENDIENTE<br/><small>por documento_ref · FOR UPDATE</small>"]:::proc
+        vvMatch{"¿Cada ítem coincide<br/>con su reserva?"}:::val
         vGen["Generar comprobante interno"]:::proc
-        vProc["Confirmar venta<br/><small>descontar stock Â· marcar CONFIRMADA<br/>MovimientoStock: VENTA Â· PrecioVenta</small>"]:::proc
-        vSalida["<b>VentaConfirmarOut</b><br/>CONFIRMADA Â· documento_ref Â· comprobante"]:::io
+        vProc["Confirmar venta<br/><small>descontar stock · marcar CONFIRMADA<br/>MovimientoStock: VENTA · PrecioVenta</small>"]:::proc
+        vSalida["<b>VentaConfirmarOut</b><br/>CONFIRMADA · documento_ref · comprobante"]:::io
     end
-    subgraph LIB["3. Liberar reserva Â· POST /stock/reservas/{id}/liberar"]
+    subgraph LIB["3. Liberar reserva · POST /stock/reservas/{id}/liberar"]
         direction TB
-        lvPend{"Â¿Reserva existe<br/>y estÃ¡ PENDIENTE?"}:::val
+        lvPend{"¿Reserva existe<br/>y está PENDIENTE?"}:::val
         lGen["Generar comprobante interno"]:::proc
         lProc["Liberar reserva<br/><small>cantidad_reservada -= reservada<br/>MovimientoStock: LIBERACION_RESERVA</small>"]:::proc
-        lSalida["<b>LiberarReservaOut</b><br/>LIBERADA Â· comprobante Â· cantidad_liberada"]:::io
+        lSalida["<b>LiberarReservaOut</b><br/>LIBERADA · comprobante · cantidad_liberada"]:::io
     end
     e404p["404<br/><b>PRODUCTO_NO_EXISTE</b>"]:::err
     e400["400<br/><b>PRODUCTO_INACTIVO</b>"]:::err
@@ -834,9 +834,9 @@ flowchart LR
     rvStock -- "OK" --> rvDisp
     rvDisp -- "Insuficiente" --> e409stk
     rvDisp -- "OK" --> rGen --> rProc --> rCommit --> rSalida --> decision
-    decision -- "SÃ­ Â· reserva puntual" --> cvPend
-    decision -- "SÃ­ Â· venta completa" --> vBusca
-    decision -- "No Â· cancelaciÃ³n" --> lvPend
+    decision -- "Sí · reserva puntual" --> cvPend
+    decision -- "Sí · venta completa" --> vBusca
+    decision -- "No · cancelación" --> lvPend
     cvPend -- "No existe" --> e404r
     cvPend -- "No pendiente" --> e409np
     cvPend -- "OK" --> cGen --> cProc --> cSalida --> fin
@@ -846,7 +846,7 @@ flowchart LR
     lvPend -- "No existe" --> e404r
     lvPend -- "No pendiente" --> e409np
     lvPend -- "OK" --> lGen --> lProc --> lSalida --> fin
-    %% GuÃ­a invisible para mantener los subgraphs principales en lectura horizontal.
+    %% Guía invisible para mantener los subgraphs principales en lectura horizontal.
     rEntrada ~~~ cvPend
     cvPend ~~~ vBusca
     vBusca ~~~ lvPend
@@ -864,26 +864,26 @@ flowchart LR
 
   <!-- ============================================================ -->
   <section id="errores">
-    <h2>CatÃ¡logo de errores</h2>
+    <h2>Catálogo de errores</h2>
     <table>
-      <tr><th>HTTP</th><th>CÃ³digo</th><th>Significado</th></tr>
+      <tr><th>HTTP</th><th>Código</th><th>Significado</th></tr>
       <tr><td><span class="status s4">400</span></td><td><code>PRODUCTO_INACTIVO</code></td><td>El producto existe pero no puede operar</td></tr>
-      <tr><td><span class="status s4">401</span></td><td><code>NO_AUTENTICADO</code></td><td>Falta credencial vÃ¡lida</td></tr>
-      <tr><td><span class="status s4">403</span></td><td><code>ACCESO_DENEGADO</code></td><td>Sin permiso para la operaciÃ³n</td></tr>
+      <tr><td><span class="status s4">401</span></td><td><code>NO_AUTENTICADO</code></td><td>Falta credencial válida</td></tr>
+      <tr><td><span class="status s4">403</span></td><td><code>ACCESO_DENEGADO</code></td><td>Sin permiso para la operación</td></tr>
       <tr><td><span class="status s4">404</span></td><td><code>PRODUCTO_NO_EXISTE</code></td><td>El producto solicitado no existe</td></tr>
       <tr><td><span class="status s4">404</span></td><td><code>STOCK_NO_INICIALIZADO</code></td><td>El producto no tiene registro de stock inicial</td></tr>
       <tr><td><span class="status s4">404</span></td><td><code>RESERVA_NO_EXISTE</code></td><td>La reserva solicitada no existe</td></tr>
-      <tr><td><span class="status s4">409</span></td><td><code>PRODUCTO_CODIGO_DUPLICADO</code></td><td>Ya existe un producto con el mismo cÃ³digo</td></tr>
+      <tr><td><span class="status s4">409</span></td><td><code>PRODUCTO_CODIGO_DUPLICADO</code></td><td>Ya existe un producto con el mismo código</td></tr>
       <tr><td><span class="status s4">409</span></td><td><code>STOCK_INSUFICIENTE</code></td><td>Disponible menor que la cantidad solicitada</td></tr>
       <tr><td><span class="status s4">409</span></td><td><code>RESERVA_NO_PENDIENTE</code></td><td>La reserva ya fue confirmada o liberada</td></tr>
       <tr><td><span class="status s4">409</span></td><td><code>RESERVA_NO_COINCIDE</code></td><td>La venta no coincide con una reserva pendiente</td></tr>
       <tr><td><span class="status s4">409</span></td><td><code>MENSAJE_DUPLICADO</code></td><td>El mensaje de compra ya fue procesado</td></tr>
       <tr><td><span class="status s4">409</span></td><td><code>REPLAY_NO_COINCIDE</code></td><td>Misma clave idempotente con contenido diferente</td></tr>
-      <tr><td><span class="status s4">409</span></td><td><code>OPERACION_YA_PROCESADA</code> / <code>DOCUMENTO_YA_PROCESADO</code></td><td>RepeticiÃ³n de operaciÃ³n ya concretada</td></tr>
-      <tr><td><span class="status s4">409</span></td><td><code>RESERVA_YA_CONFIRMADA</code> / <code>RESERVA_YA_LIBERADA</code></td><td>Estado final que impide la operaciÃ³n pedida</td></tr>
+      <tr><td><span class="status s4">409</span></td><td><code>OPERACION_YA_PROCESADA</code> / <code>DOCUMENTO_YA_PROCESADO</code></td><td>Repetición de operación ya concretada</td></tr>
+      <tr><td><span class="status s4">409</span></td><td><code>RESERVA_YA_CONFIRMADA</code> / <code>RESERVA_YA_LIBERADA</code></td><td>Estado final que impide la operación pedida</td></tr>
       <tr><td><span class="status s4">409</span></td><td><code>DOCUMENTO_YA_TIENE_RESERVA</code></td><td>El documento externo ya posee una reserva</td></tr>
-      <tr><td><span class="status s4">409</span></td><td><code>CONFLICTO_CONCURRENCIA</code></td><td>El stock o la reserva fue modificado por otra operaciÃ³n concurrente</td></tr>
-      <tr><td><span class="status s4">422</span></td><td><code>VALIDACION_ERROR</code></td><td>El request no cumple el contrato OpenAPI (incluye <code>include</code> invÃ¡lido)</td></tr>
+      <tr><td><span class="status s4">409</span></td><td><code>CONFLICTO_CONCURRENCIA</code></td><td>El stock o la reserva fue modificado por otra operación concurrente</td></tr>
+      <tr><td><span class="status s4">422</span></td><td><code>VALIDACION_ERROR</code></td><td>El request no cumple el contrato OpenAPI (incluye <code>include</code> inválido)</td></tr>
       <tr><td><span class="status s5">500</span></td><td><code>ERROR_INTERNO</code></td><td>Error interno controlado</td></tr>
       <tr><td><span class="status s5">default</span></td><td><code>ERROR_NO_CONTROLADO</code></td><td>Error no clasificado por el contrato</td></tr>
     </table>
@@ -892,8 +892,8 @@ flowchart LR
   </section>
 
   <footer>
-    SDI Â· Sistema Distribuido de Inventario â€” MÃ³dulo Stock Â· DocumentaciÃ³n generada a partir del contrato
-    <code>openapi.yaml</code> y del cÃ³digo en <code>app/</code>.
+    SDI · Sistema Distribuido de Inventario — Módulo Stock · Documentación generada a partir del contrato
+    <code>openapi.yaml</code> y del código en <code>app/</code>.
   </footer>
 </main>
 <script type="module">

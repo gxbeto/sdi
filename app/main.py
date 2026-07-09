@@ -1,6 +1,8 @@
+from pathlib import Path
+
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 
 from app.api import compras, productos, stock, ventas
 from app.core.errors import AppError
@@ -27,6 +29,8 @@ Esta API esta pensada para integracion entre sistemas internos:
 
 La primera version no incluye seguridad formal. El consumo debe realizarse
 en ambiente controlado de red interna o infraestructura protegida.
+
+**[Ver documentacion de servicios (guia funcional)](/documentacion)**
 """,
     terms_of_service="https://docs.sdi.local/terminos-api",
     contact={
@@ -60,7 +64,7 @@ def custom_openapi() -> dict:
     schema = original_openapi()
     schema["externalDocs"] = {
         "description": "Documentacion tecnica y funcional del modulo SDI Stock",
-        "url": "http://158.220.111.78:8181/sdi",
+        "url": "http://158.220.111.78:8181/documentacion",
     }
 
     app.openapi_schema = schema
@@ -133,6 +137,16 @@ def internal_error_handler(_: Request, exc: Exception) -> JSONResponse:
 )
 def health() -> HealthOut:
     return HealthOut(status="ok")
+
+
+_DOCUMENTACION_HTML = Path(__file__).resolve().parents[1] / "docs" / "sdi_documentacion_servicios.html"
+
+
+# Guía funcional de los servicios, enlazada desde /docs (descripción y externalDocs).
+# include_in_schema=False: es una página de documentación, no parte del contrato.
+@app.get("/documentacion", include_in_schema=False)
+def documentacion() -> FileResponse:
+    return FileResponse(_DOCUMENTACION_HTML, media_type="text/html; charset=utf-8")
 
 
 app.include_router(productos.router)

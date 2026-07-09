@@ -27,6 +27,9 @@ info:
 
     en ambiente controlado de red interna o infraestructura protegida.
 
+
+    **[Ver documentacion de servicios (guia funcional)](/documentacion)**
+
     '
   termsOfService: https://docs.sdi.local/terminos-api
   contact:
@@ -2045,7 +2048,7 @@ components:
             mensaje: Ocurrió un error no clasificado por el contrato.
 externalDocs:
   description: Documentacion tecnica y funcional del modulo SDI Stock
-  url: http://158.220.111.78:8181/sdi
+  url: http://158.220.111.78:8181/documentacion
 x-error-policy:
   format: Todas las respuestas de error usan el schema ErrorResponse.
   schema:
