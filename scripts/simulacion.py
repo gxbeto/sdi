@@ -5,7 +5,9 @@ Uso (contra una API en ejecución):
 
 Por defecto usa http://127.0.0.1:8000 y, antes de simular, BORRA TODOS los datos
 y reinicia los contadores (TRUNCATE ... RESTART IDENTITY) de la base configurada
-en .env (o la indicada con --db-url). Use --no-reset para omitir el borrado.
+en .env (o la indicada con --db-url). El borrado pide confirmación explícita
+(hay que escribir 'borrar'); use --sin-confirmar solo en automatizaciones y
+--no-reset para simular sin borrar. NO ejecutar el reset contra producción.
 
 Reglas de la simulación:
 - Se compran los 25 productos del catálogo. La cantidad es aleatoria de 1 a 20,
@@ -236,9 +238,26 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=None, help="Semilla para reproducir la simulación.")
     parser.add_argument("--db-url", default=None, help="URL de BD para el reset (por defecto, la del .env).")
     parser.add_argument("--no-reset", action="store_true", help="No borrar los datos antes de simular.")
+    parser.add_argument(
+        "--sin-confirmar",
+        action="store_true",
+        help="No pedir confirmación antes del reset (para uso automatizado).",
+    )
     args = parser.parse_args()
 
     if not args.no_reset:
+        if not args.sin_confirmar:
+            if args.db_url:
+                destino = args.db_url.rsplit("@", 1)[-1]
+            else:
+                from app.core.config import get_settings
+
+                destino = f"{get_settings().db_host}:{get_settings().db_port}/{get_settings().db_name}"
+            print(f"ATENCIÓN: se van a BORRAR TODOS los datos de {destino}.")
+            respuesta = input("Escriba 'borrar' para continuar (cualquier otra cosa cancela): ")
+            if respuesta.strip().lower() != "borrar":
+                print("Simulación cancelada. Use --no-reset para simular sin borrar.")
+                sys.exit(1)
         reiniciar_datos(args.db_url)
 
     rng = random.Random(args.seed)
