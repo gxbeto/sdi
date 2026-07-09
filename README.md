@@ -113,6 +113,7 @@ Códigos principales: `VALIDACION_ERROR`, `PRODUCTO_NO_EXISTE`, `PRODUCTO_INACTI
 
 ## Documentación
 
+- [Instalación en producción y desinstalación](docs/instalacion_produccion.md)
 - [Contrato de servicios (OpenAPI 3.2)](docs/sdi_contrato_servicios_version_2.yaml)
 - [Flujos de compras y ventas](docs/vista_previa_flujos_profesionales.html) (diagramas Mermaid en [docs/](docs/))
 - Releases del sistema en [docs/](docs/)
