@@ -29,8 +29,6 @@ Esta API esta pensada para integracion entre sistemas internos:
 
 La primera version no incluye seguridad formal. El consumo debe realizarse
 en ambiente controlado de red interna o infraestructura protegida.
-
-**[Ver documentacion de servicios (guia funcional)](/documentacion)**
 """,
     terms_of_service="https://docs.sdi.local/terminos-api",
     contact={
