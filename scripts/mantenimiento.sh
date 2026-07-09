@@ -30,6 +30,12 @@ run_as_app_user() {
     su - "$APP_USER" -c "$1"
 }
 
+# git como el usuario dueño del repo: como root, git moderno rechaza operar
+# sobre repos de otro usuario ("detected dubious ownership").
+version_desplegada() {
+    run_as_app_user "git -C $APP_DIR log -1 --format='%h %s (%cr)'"
+}
+
 ensure_app_user_can_write_repo() {
     if ! su - "$APP_USER" -c "test -w '$APP_DIR/.git/objects'" >/dev/null 2>&1; then
         echo -e "${RED}Error de permisos del repositorio.${NC}"
@@ -90,7 +96,7 @@ status_app() {
     curl -sf "$HEALTH_URL" && echo "" || echo -e "${RED}sin respuesta${NC}"
 
     echo -e "\nVersion desplegada:"
-    git -C "$APP_DIR" log -1 --format="%h %s (%cr)" || true
+    version_desplegada || true
 
     echo -e "\nUso de disco:"
     df -h / | tail -1
@@ -114,7 +120,7 @@ deploy() {
     restart_app_and_verify
 
     echo -e "${BLUE}[3/3] Version desplegada:${NC}"
-    git -C "$APP_DIR" log -1 --format="%h %s (%cr)"
+    version_desplegada
     echo -e "${GREEN}Deploy finalizado${NC}"
 }
 
