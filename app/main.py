@@ -42,6 +42,7 @@ en ambiente controlado de red interna o infraestructura protegida.
             "description": "Ambiente local de desarrollo",
         },
         {
+            # Placeholder: reemplazar por el host real del ambiente de pruebas.
             "url": "http://sdi-pruebas.example.com:6000",
             "description": "Ambiente de pruebas / integracion",
         },
