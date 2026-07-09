@@ -39,7 +39,7 @@ info:
 servers:
 - url: http://127.0.0.1:8000
   description: Ambiente local de desarrollo
-- url: http://sdi-pruebas.example.com:8181
+- url: http://158.220.111.78:8181
   description: Ambiente de pruebas / integracion
 paths:
   /health:
@@ -2045,7 +2045,7 @@ components:
             mensaje: Ocurrió un error no clasificado por el contrato.
 externalDocs:
   description: Documentacion tecnica y funcional del modulo SDI Stock
-  url: http://sdi-pruebas.example.com:8181/sdi
+  url: http://158.220.111.78:8181/sdi
 x-error-policy:
   format: Todas las respuestas de error usan el schema ErrorResponse.
   schema:
